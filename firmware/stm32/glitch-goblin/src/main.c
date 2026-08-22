@@ -9,17 +9,85 @@ UART_HandleTypeDef huart2;
 static void LED_Init(void);
 static void UART2_Init(void);
 
-int main(void){
+int main(void)
+{
     HAL_Init();
+
     LED_Init();
     UART2_Init();
 
-    const char *message = "Mwahaha Glitch Goblin is now back!\r\n";    // basic uart testing right now
+    uint8_t rx_byte;
 
-    while(1){
-        HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
-        HAL_UART_Transmit(&huart2, (uint8_t*)message, strlen(message), HAL_MAX_DELAY);
-        HAL_Delay(500); 
+    const char *welcome =
+        "\r\nGlitch Goblin v0.1\r\n"
+        "Commands:\r\n"
+        "1 = Glitch Goblin Led on\r\n"
+        "0 = Glitch Goblin Led off\r\n"
+        "t = Glitch Goblin Led toggle\r\n";
+        
+
+    HAL_UART_Transmit(
+        &huart2,
+        (uint8_t *)welcome,
+        strlen(welcome),
+        HAL_MAX_DELAY
+    );
+
+    while (1)
+    {
+        if (HAL_UART_Receive(&huart2, &rx_byte, 1, 10) == HAL_OK)
+        {
+            if (rx_byte == '1')
+            {
+                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+
+                const char *msg = "Glitch Goblin Led is now on!\r\n";
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+            else if (rx_byte == '0')
+            {
+                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+
+                const char *msg = "Glitch Goblin Led is now off!\r\n";
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+            else if (rx_byte == 't')
+            {
+                HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
+
+                const char *msg = "Glitch Goblin Led is now toggled!\r\n";
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+            else if (rx_byte == '?')
+            {
+                const char *msg =
+                    "1 = Glitch Goblin Led on\r\n"
+                    "0 = Glitch Goblin Led off\r\n"
+                    "t = Glitch Goblin Led toggle\r\n";
+
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+        }
     }
 }
 
