@@ -1,4 +1,5 @@
 #include "stm32f4xx_hal.h"
+#include "ring_buffer.h"
 #include <string.h>
 
 #define LED_PIN  GPIO_PIN_5
@@ -6,8 +7,8 @@
 
 UART_HandleTypeDef huart2;
 
-volatile uint8_t rx_byte;
-volatile uint8_t rx_ready = 0;
+volatile uint8_t uart_rx_byte;
+RingBuffer uart_rx_buffer;
 
 static void LED_Init(void);
 static void UART2_Init(void);
@@ -15,7 +16,7 @@ static void UART2_Init(void);
 int main(void)
 {
     HAL_Init();
-
+    RingBuffer_Init(&uart_rx_buffer);
     LED_Init();
     UART2_Init();
 
@@ -36,18 +37,21 @@ int main(void)
     );
 
     HAL_UART_Receive_IT(
-    &huart2,
-    (uint8_t *)&rx_byte,
+     &huart2,
+    (uint8_t *)&uart_rx_byte,
     1
 );
 
     while (1)
 {
-    if (rx_ready)
-    {
-        rx_ready = 0;
+    uint8_t byte;
+   while (1)
+{
+    uint8_t byte;
 
-        if (rx_byte == '1')
+    while (RingBuffer_Pop(&uart_rx_buffer, &byte))
+    {
+        if (byte == '1')
         {
             HAL_GPIO_WritePin(
                 LED_PORT,
@@ -56,7 +60,7 @@ int main(void)
             );
 
             const char *msg =
-                "Glitch Goblin Led is now on!\r\n";
+                "Glitch Goblin LED is now on!\r\n";
 
             HAL_UART_Transmit(
                 &huart2,
@@ -66,7 +70,7 @@ int main(void)
             );
         }
 
-        else if (rx_byte == '0')
+        else if (byte == '0')
         {
             HAL_GPIO_WritePin(
                 LED_PORT,
@@ -75,7 +79,7 @@ int main(void)
             );
 
             const char *msg =
-                "Glitch Goblin Led is now off!\r\n";
+                "Glitch Goblin LED is now off!\r\n";
 
             HAL_UART_Transmit(
                 &huart2,
@@ -85,7 +89,7 @@ int main(void)
             );
         }
 
-        else if (rx_byte == 't')
+        else if (byte == 't')
         {
             HAL_GPIO_TogglePin(
                 LED_PORT,
@@ -93,7 +97,7 @@ int main(void)
             );
 
             const char *msg =
-                "Glitch Goblin Led is now toggled!\r\n";
+                "Glitch Goblin flipped the LED >:)\r\n";
 
             HAL_UART_Transmit(
                 &huart2,
@@ -103,12 +107,14 @@ int main(void)
             );
         }
 
-        else if (rx_byte == '?')
+        else if (byte == '?')
         {
             const char *msg =
-                "1 = Glitch Goblin Led on\r\n"
-                "0 = Glitch Goblin Led off\r\n"
-                "t = Glitch Goblin Led toggle\r\n";
+                "\r\nGlitch Goblin commands:\r\n"
+                "1 = LED on\r\n"
+                "0 = LED off\r\n"
+                "t = LED toggle\r\n"
+                "? = help because apparently you forgot\r\n\r\n";
 
             HAL_UART_Transmit(
                 &huart2,
@@ -117,13 +123,9 @@ int main(void)
                 HAL_MAX_DELAY
             );
         }
-
-        HAL_UART_Receive_IT(
-            &huart2,
-            (uint8_t *)&rx_byte,
-            1
-        );
     }
+}
+
 }
 }
 
@@ -182,6 +184,18 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart->Instance == USART2)
     {
-        rx_ready = 1;
-    }
+        RingBuffer_Push(
+            &uart_rx_buffer,
+            uart_rx_byte
+        );
+
+        /*
+         * Immediately get ready for the next byte.
+         */
+        HAL_UART_Receive_IT(
+            &huart2,
+            (uint8_t *)&uart_rx_byte,
+            1
+        );
+   }
 }
