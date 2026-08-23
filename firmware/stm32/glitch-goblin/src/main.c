@@ -43,18 +43,44 @@ while (1)
 {
     uint8_t byte;
 
-    while (RingBuffer_Pop(
-        &uart_rx_buffer,
-        &byte
-    ))
+    while (RingBuffer_Pop(&uart_rx_buffer, &byte))
     {
-        if (SerumParser_ProcessByte(
-            &serum_parser,
-            byte
-        ))
+        SerumParseResult result =
+            SerumParser_ProcessByte(
+                &serum_parser,
+                byte
+            );
+
+        if (result == SERUM_PARSE_PACKET_READY)
         {
             const char *msg =
-                "SERUM PACKET RECEIVED\r\n";
+                "SERUM: packet valid\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        else if (result == SERUM_PARSE_CRC_ERROR)
+        {
+            const char *msg =
+                "SERUM: CRC FAILED - packet rejected >:(\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        else if (result == SERUM_PARSE_FORMAT_ERROR)
+        {
+            const char *msg =
+                "SERUM: malformed packet\r\n";
 
             HAL_UART_Transmit(
                 &huart2,

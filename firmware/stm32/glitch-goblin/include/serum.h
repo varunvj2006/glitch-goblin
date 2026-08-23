@@ -31,6 +31,8 @@ typedef struct
 
     uint8_t payload[SERUM_MAX_PAYLOAD_SIZE];
 
+    uint16_t crc;
+
 } SerumPacket;
 
 
@@ -48,10 +50,21 @@ typedef enum
     SERUM_READ_SEQUENCE_HIGH,
     SERUM_READ_SEQUENCE_LOW,
 
-    SERUM_READ_PAYLOAD
+    SERUM_READ_PAYLOAD,
+
+    SERUM_READ_CRC_HIGH,
+    SERUM_READ_CRC_LOW
 
 } SerumParserState;
 
+typedef enum
+{
+    SERUM_PARSE_IN_PROGRESS,
+    SERUM_PARSE_PACKET_READY,
+    SERUM_PARSE_CRC_ERROR,
+    SERUM_PARSE_FORMAT_ERROR
+
+} SerumParseResult;
 
 typedef struct
 {
@@ -61,12 +74,15 @@ typedef struct
 
     uint16_t payload_index;
 
+    uint16_t calculated_crc;
+    uint16_t received_crc;
+
 } SerumParser;
 
 
 void SerumParser_Init(SerumParser *parser);
 
-bool SerumParser_ProcessByte(
+SerumParseResult SerumParser_ProcessByte(
     SerumParser *parser,
     uint8_t byte
 );
