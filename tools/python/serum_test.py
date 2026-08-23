@@ -20,32 +20,99 @@ def crc16_ccitt(data):
     return crc
 
 
-body = bytes([
-    0x01,
-    0x01,
-    0x00, 0x00,
-    0x00, 0x01
-])
+def build_serum_packet(msg_type, sequence, payload=b""):
+    length = len(payload)
 
-crc = crc16_ccitt(body)
+    body = bytes([
+        0x01,
+        msg_type,
+        (length >> 8) & 0xFF,
+        length & 0xFF,
+        (sequence >> 8) & 0xFF,
+        sequence & 0xFF
+    ]) + payload
 
-packet = bytes([
-    0x53,
-    0x45
-]) + body + crc.to_bytes(2, "big")
+    crc = crc16_ccitt(body)
+
+    packet = bytes([
+        0x53,
+        0x45
+    ]) + body + crc.to_bytes(2, "big")
+
+    return packet
 
 
-bad_packet = bytearray(packet)
-bad_packet[3] ^= 0x01
+def parse_serum_packet(packet):
+    if len(packet) < 10:
+        print("Response too short")
+        return
+
+    if packet[0] != 0x53 or packet[1] != 0x45:
+        print("Invalid SERUM sync bytes")
+        return
+
+    version = packet[2]
+    msg_type = packet[3]
+
+    length = (packet[4] << 8) | packet[5]
+
+    sequence = (packet[6] << 8) | packet[7]
+
+    expected_size = 8 + length + 2
+
+    if len(packet) < expected_size:
+        print("Incomplete SERUM packet")
+        return
+
+    payload = packet[8:8 + length]
+
+    received_crc = (
+        packet[8 + length] << 8
+    ) | packet[9 + length]
+
+    body = packet[2:8 + length]
+
+    calculated_crc = crc16_ccitt(body)
+
+    print("SERUM response:")
+    print(f"Version:  {version}")
+    print(f"Type:     0x{msg_type:02X}")
+    print(f"Length:   {length}")
+    print(f"Sequence: {sequence}")
+    print(f"Payload:  {payload.hex(' ')}")
+    print(f"CRC RX:   0x{received_crc:04X}")
+    print(f"CRC CALC: 0x{calculated_crc:04X}")
+
+    if calculated_crc == received_crc:
+        print("CRC: VALID")
+    else:
+        print("CRC: INVALID")
+
+    if msg_type == 0x05:
+        print(f"ACK received for packet #{sequence}")
+    elif msg_type == 0x06:
+        print(f"NACK received for packet #{sequence}")
 
 
-with serial.Serial(PORT, BAUD, timeout=1) as ser:
+sequence = 1
+
+packet = build_serum_packet(
+    msg_type=0x01,
+    sequence=sequence
+)
+
+print("Sending SERUM packet:")
+print(packet.hex(" "))
+
+with serial.Serial(
+    PORT,
+    BAUD,
+    timeout=1
+) as ser:
+
     time.sleep(1)
 
     ser.reset_input_buffer()
-
-    print("Valid SERUM packet:")
-    print(packet.hex(" "))
 
     ser.write(packet)
 
@@ -53,17 +120,13 @@ with serial.Serial(PORT, BAUD, timeout=1) as ser:
 
     response = ser.read_all()
 
-    print(response.decode(errors="replace"))
+    print()
+    print("Raw STM32 response:")
+    print(response.hex(" "))
 
-    ser.reset_input_buffer()
+    print()
 
-    print("Corrupted SERUM packet:")
-    print(bad_packet.hex(" "))
-
-    ser.write(bad_packet)
-
-    time.sleep(0.5)
-
-    response = ser.read_all()
-
-    print(response.decode(errors="replace"))
+    if response:
+        parse_serum_packet(response)
+    else:
+        print("No response from STM32")

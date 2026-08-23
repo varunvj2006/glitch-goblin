@@ -10,13 +10,18 @@
 
 #define SERUM_MAX_PAYLOAD_SIZE  64
 
+#define SERUM_HEADER_SIZE       8
+#define SERUM_CRC_SIZE          2
+
 
 typedef enum
 {
     SERUM_MSG_PING       = 0x01,
     SERUM_MSG_COMMAND    = 0x02,
     SERUM_MSG_TELEMETRY  = 0x03,
-    SERUM_MSG_ERROR      = 0x04
+    SERUM_MSG_ERROR      = 0x04,
+    SERUM_MSG_ACK        = 0x05,
+    SERUM_MSG_NACK       = 0x06
 
 } SerumMessageType;
 
@@ -57,6 +62,7 @@ typedef enum
 
 } SerumParserState;
 
+
 typedef enum
 {
     SERUM_PARSE_IN_PROGRESS,
@@ -65,6 +71,7 @@ typedef enum
     SERUM_PARSE_FORMAT_ERROR
 
 } SerumParseResult;
+
 
 typedef struct
 {
@@ -80,11 +87,22 @@ typedef struct
 } SerumParser;
 
 
-void SerumParser_Init(SerumParser *parser);
+void SerumParser_Init(
+    SerumParser *parser
+);
+
 
 SerumParseResult SerumParser_ProcessByte(
     SerumParser *parser,
     uint8_t byte
 );
+
+
+uint16_t Serum_EncodePacket(
+    const SerumPacket *packet,
+    uint8_t *buffer,
+    uint16_t buffer_size
+);
+
 
 #endif

@@ -22,6 +22,26 @@ static uint16_t Serum_CRC16_Update(
     return crc;
 }
 
+
+static uint16_t Serum_CRC16(
+    const uint8_t *data,
+    uint16_t length
+)
+{
+    uint16_t crc = 0xFFFF;
+
+    for (uint16_t i = 0; i < length; i++)
+    {
+        crc = Serum_CRC16_Update(
+            crc,
+            data[i]
+        );
+    }
+
+    return crc;
+}
+
+
 void SerumParser_Init(SerumParser *parser)
 {
     parser->state = SERUM_WAIT_SYNC_1;
@@ -29,6 +49,8 @@ void SerumParser_Init(SerumParser *parser)
     parser->calculated_crc = 0xFFFF;
     parser->received_crc = 0;
 }
+
+
 
 SerumParseResult SerumParser_ProcessByte(
     SerumParser *parser,
@@ -247,4 +269,66 @@ SerumParseResult SerumParser_ProcessByte(
     }
 
     return SERUM_PARSE_IN_PROGRESS;
+}
+
+
+uint16_t Serum_EncodePacket(
+    const SerumPacket *packet,
+    uint8_t *buffer,
+    uint16_t buffer_size
+)
+{
+    uint16_t total_size =
+        SERUM_HEADER_SIZE +
+        packet->length +
+        SERUM_CRC_SIZE;
+
+    if (packet->length > SERUM_MAX_PAYLOAD_SIZE)
+    {
+        return 0;
+    }
+
+    if (buffer_size < total_size)
+    {
+        return 0;
+    }
+
+    buffer[0] = SERUM_SYNC_1;
+    buffer[1] = SERUM_SYNC_2;
+
+    buffer[2] = packet->version;
+    buffer[3] = packet->type;
+
+    buffer[4] =
+        (uint8_t)(packet->length >> 8);
+
+    buffer[5] =
+        (uint8_t)(packet->length & 0xFF);
+
+    buffer[6] =
+        (uint8_t)(packet->sequence >> 8);
+
+    buffer[7] =
+        (uint8_t)(packet->sequence & 0xFF);
+
+    for (uint16_t i = 0;
+         i < packet->length;
+         i++)
+    {
+        buffer[8 + i] =
+            packet->payload[i];
+    }
+
+    uint16_t crc = Serum_CRC16(
+        &buffer[2],
+        6 + packet->length
+    );
+
+    buffer[8 + packet->length] =
+        (uint8_t)(crc >> 8);
+
+    buffer[9 + packet->length] =
+        (uint8_t)(crc & 0xFF);
+
+    return total_size;
 }

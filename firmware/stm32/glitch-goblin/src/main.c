@@ -23,16 +23,6 @@ int main(void)
     LED_Init();
     UART2_Init();
 
-
-    const char *welcome =
-        "\r\nGlitch Goblin v0.1\r\n"
-        "Commands:\r\n"
-        "1 = Glitch Goblin Led on\r\n"
-        "0 = Glitch Goblin Led off\r\n"
-        "t = Glitch Goblin Led toggle\r\n";
-        
-
-
     HAL_UART_Receive_IT(
      &huart2,
     (uint8_t *)&uart_rx_byte,
@@ -51,18 +41,44 @@ while (1)
                 byte
             );
 
-        if (result == SERUM_PARSE_PACKET_READY)
-        {
-            const char *msg =
-                "SERUM: packet valid\r\n";
+    if (result == SERUM_PARSE_PACKET_READY)
+    {
+        SerumPacket ack_packet = {0};
 
+        ack_packet.version =
+            SERUM_VERSION;
+
+        ack_packet.type =
+            SERUM_MSG_ACK;
+
+        ack_packet.length = 0;
+
+        ack_packet.sequence =
+            serum_parser.packet.sequence;
+
+        uint8_t tx_buffer[
+            SERUM_HEADER_SIZE +
+            SERUM_MAX_PAYLOAD_SIZE +
+            SERUM_CRC_SIZE
+        ];
+
+        uint16_t tx_length =
+            Serum_EncodePacket(
+                &ack_packet,
+                tx_buffer,
+                sizeof(tx_buffer)
+            );
+
+        if (tx_length > 0)
+        {
             HAL_UART_Transmit(
                 &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
+                tx_buffer,
+                tx_length,
                 HAL_MAX_DELAY
             );
         }
+    }
 
         else if (result == SERUM_PARSE_CRC_ERROR)
         {
