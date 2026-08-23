@@ -6,6 +6,9 @@
 
 UART_HandleTypeDef huart2;
 
+volatile uint8_t rx_byte;
+volatile uint8_t rx_ready = 0;
+
 static void LED_Init(void);
 static void UART2_Init(void);
 
@@ -16,7 +19,6 @@ int main(void)
     LED_Init();
     UART2_Init();
 
-    uint8_t rx_byte;
 
     const char *welcome =
         "\r\nGlitch Goblin v0.1\r\n"
@@ -33,62 +35,96 @@ int main(void)
         HAL_MAX_DELAY
     );
 
+    HAL_UART_Receive_IT(
+    &huart2,
+    (uint8_t *)&rx_byte,
+    1
+);
+
     while (1)
+{
+    if (rx_ready)
     {
-        if (HAL_UART_Receive(&huart2, &rx_byte, 1, 10) == HAL_OK)
+        rx_ready = 0;
+
+        if (rx_byte == '1')
         {
-            if (rx_byte == '1')
-            {
-                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(
+                LED_PORT,
+                LED_PIN,
+                GPIO_PIN_SET
+            );
 
-                const char *msg = "Glitch Goblin Led is now on!\r\n";
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
-                );
-            }
-            else if (rx_byte == '0')
-            {
-                HAL_GPIO_WritePin(LED_PORT, LED_PIN, GPIO_PIN_RESET);
+            const char *msg =
+                "Glitch Goblin Led is now on!\r\n";
 
-                const char *msg = "Glitch Goblin Led is now off!\r\n";
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
-                );
-            }
-            else if (rx_byte == 't')
-            {
-                HAL_GPIO_TogglePin(LED_PORT, LED_PIN);
-
-                const char *msg = "Glitch Goblin Led is now toggled!\r\n";
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
-                );
-            }
-            else if (rx_byte == '?')
-            {
-                const char *msg =
-                    "1 = Glitch Goblin Led on\r\n"
-                    "0 = Glitch Goblin Led off\r\n"
-                    "t = Glitch Goblin Led toggle\r\n";
-
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
-                );
-            }
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
         }
+
+        else if (rx_byte == '0')
+        {
+            HAL_GPIO_WritePin(
+                LED_PORT,
+                LED_PIN,
+                GPIO_PIN_RESET
+            );
+
+            const char *msg =
+                "Glitch Goblin Led is now off!\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        else if (rx_byte == 't')
+        {
+            HAL_GPIO_TogglePin(
+                LED_PORT,
+                LED_PIN
+            );
+
+            const char *msg =
+                "Glitch Goblin Led is now toggled!\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        else if (rx_byte == '?')
+        {
+            const char *msg =
+                "1 = Glitch Goblin Led on\r\n"
+                "0 = Glitch Goblin Led off\r\n"
+                "t = Glitch Goblin Led toggle\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        HAL_UART_Receive_IT(
+            &huart2,
+            (uint8_t *)&rx_byte,
+            1
+        );
     }
+}
 }
 
 
@@ -128,10 +164,24 @@ static void UART2_Init(void)
     huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
 
-    HAL_UART_Init(&huart2);
-}
+    HAL_UART_Init(&huart2);   
 
+    HAL_NVIC_SetPriority(USART2_IRQn, 1, 0);   //interrupt controller
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
+}
+void USART2_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&huart2);
+}
 void SysTick_Handler(void)
 {
     HAL_IncTick();
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART2)
+    {
+        rx_ready = 1;
+    }
 }
