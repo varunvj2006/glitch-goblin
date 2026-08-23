@@ -16,13 +16,8 @@ void RingBuffer_Init(RingBuffer *rb)
 
 bool RingBuffer_Push(RingBuffer *rb, uint8_t byte)
 {
-    uint16_t next_head = NextIndex(rb->head);
-
-    /*
-     * If moving head forward would collide
-     * with tail, the buffer is full.
-     */
-    if (next_head == rb->tail)
+    uint16_t next_head = NextIndex(rb->head);  
+    if (next_head == rb->tail)  //if next head is tail then collisioon so buffer is full and we drop the byte
     {
         rb->dropped_bytes++;
         return false;
@@ -38,10 +33,8 @@ bool RingBuffer_Push(RingBuffer *rb, uint8_t byte)
 
 bool RingBuffer_Pop(RingBuffer *rb, uint8_t *byte)
 {
-    /*
-     * head == tail means buffer is empty.
-     */
-    if (rb->head == rb->tail)
+ 
+    if (rb->head == rb->tail)  // empty buffer
     {
         return false;
     }
