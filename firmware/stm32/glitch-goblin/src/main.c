@@ -1,5 +1,6 @@
 #include "stm32f4xx_hal.h"
 #include "ring_buffer.h"
+#include "serum.h"
 #include <string.h>
 
 #define LED_PIN  GPIO_PIN_5
@@ -9,6 +10,7 @@ UART_HandleTypeDef huart2;
 
 volatile uint8_t uart_rx_byte;
 RingBuffer uart_rx_buffer;
+SerumParser serum_parser;
 
 static void LED_Init(void);
 static void UART2_Init(void);
@@ -17,6 +19,7 @@ int main(void)
 {
     HAL_Init();
     RingBuffer_Init(&uart_rx_buffer);
+    SerumParser_Init(&serum_parser);
     LED_Init();
     UART2_Init();
 
@@ -29,12 +32,6 @@ int main(void)
         "t = Glitch Goblin Led toggle\r\n";
         
 
-    HAL_UART_Transmit(
-        &huart2,
-        (uint8_t *)welcome,
-        strlen(welcome),
-        HAL_MAX_DELAY
-    );
 
     HAL_UART_Receive_IT(
      &huart2,
@@ -42,79 +39,22 @@ int main(void)
     1
 );
 
-    while (1)
-{
-    uint8_t byte;
-   while (1)
+while (1)
 {
     uint8_t byte;
 
-    while (RingBuffer_Pop(&uart_rx_buffer, &byte))
+    while (RingBuffer_Pop(
+        &uart_rx_buffer,
+        &byte
+    ))
     {
-        if (byte == '1')
-        {
-            HAL_GPIO_WritePin(
-                LED_PORT,
-                LED_PIN,
-                GPIO_PIN_SET
-            );
-
-            const char *msg =
-                "Glitch Goblin LED is now on!\r\n";
-
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
-            );
-        }
-
-        else if (byte == '0')
-        {
-            HAL_GPIO_WritePin(
-                LED_PORT,
-                LED_PIN,
-                GPIO_PIN_RESET
-            );
-
-            const char *msg =
-                "Glitch Goblin LED is now off!\r\n";
-
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
-            );
-        }
-
-        else if (byte == 't')
-        {
-            HAL_GPIO_TogglePin(
-                LED_PORT,
-                LED_PIN
-            );
-
-            const char *msg =
-                "Glitch Goblin flipped the LED >:)\r\n";
-
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
-            );
-        }
-
-        else if (byte == '?')
+        if (SerumParser_ProcessByte(
+            &serum_parser,
+            byte
+        ))
         {
             const char *msg =
-                "\r\nGlitch Goblin commands:\r\n"
-                "1 = LED on\r\n"
-                "0 = LED off\r\n"
-                "t = LED toggle\r\n"
-                "? = help because apparently you forgot\r\n\r\n";
+                "SERUM PACKET RECEIVED\r\n";
 
             HAL_UART_Transmit(
                 &huart2,
@@ -125,9 +65,8 @@ int main(void)
         }
     }
 }
+}
 
-}
-}
 
 
 static void LED_Init(void){
