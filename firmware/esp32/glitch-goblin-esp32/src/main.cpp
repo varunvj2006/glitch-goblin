@@ -17,14 +17,41 @@ void setup()
 
     Serial.println("ESP32 ready");
 
-    SerumUART.println("HELLO STM32");
+    uint8_t ping_packet[] =
+    {
+        0x53,
+        0x45,
+        0x01,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0xF1,
+        0xC0
+    };
+
+    SerumUART.write(
+        ping_packet,
+        sizeof(ping_packet)
+    );
+
+    Serial.println("SERUM PING #1 sent");
 }
 
 void loop()
 {
     while (SerumUART.available())
     {
-        char byte = SerumUART.read();
-        Serial.write(byte);
+        uint8_t byte =
+            SerumUART.read();
+
+        if (byte < 0x10)
+        {
+            Serial.print("0");
+        }
+
+        Serial.print(byte, HEX);
+        Serial.print(" ");
     }
 }
