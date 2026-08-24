@@ -26,6 +26,11 @@ static uint8_t sequence_initialized = 0;
 static uint16_t esp32_last_sequence = 0;
 static uint8_t esp32_sequence_initialized = 0;
 
+static uint32_t serum_valid_packets = 0;
+static uint32_t serum_crc_errors = 0;
+static uint32_t serum_duplicates = 0;
+static uint32_t serum_processed_packets = 0;
+
 static void LED_Init(void);
 static void UART1_Init(void);
 static void UART2_Init(void);
@@ -34,6 +39,10 @@ static void ProcessEsp32Serum(void);
 static void ProcessPcSerum(void);
 
 static void SendSerumAck(
+    UART_HandleTypeDef *huart,
+    uint16_t sequence
+);
+static void SendSerumTelemetry(
     UART_HandleTypeDef *huart,
     uint16_t sequence
 );
@@ -94,6 +103,36 @@ static void ProcessEsp32Serum(void)
             uint16_t sequence =
                 esp32_serum_parser.packet.sequence;
 
+            bool stats_requested = false;
+
+            if (
+                esp32_serum_parser.packet.type ==
+                    SERUM_MSG_COMMAND &&
+                esp32_serum_parser.packet.length >= 1 &&
+                esp32_serum_parser.packet.payload[0] ==
+                    SERUM_CMD_GET_STATS
+            )
+            {
+                stats_requested = true;
+            }
+
+            if (stats_requested)
+            {
+                SendSerumAck(
+                    &huart1,
+                    sequence
+                );
+
+                SendSerumTelemetry(
+                    &huart1,
+                    sequence
+                );
+
+                continue;
+            }
+
+            serum_valid_packets++;
+
             bool duplicate = false;
 
             if (
@@ -106,8 +145,13 @@ static void ProcessEsp32Serum(void)
 
             if (!duplicate)
             {
-                esp32_last_sequence = sequence;
-                esp32_sequence_initialized = 1;
+                esp32_last_sequence =
+                    sequence;
+
+                esp32_sequence_initialized =
+                    1;
+
+                serum_processed_packets++;
 
                 const char *msg =
                     "ESP32 SERUM: NEW packet\r\n";
@@ -121,6 +165,8 @@ static void ProcessEsp32Serum(void)
             }
             else
             {
+                serum_duplicates++;
+
                 const char *msg =
                     "ESP32 SERUM: DUPLICATE packet ignored\r\n";
 
@@ -143,6 +189,8 @@ static void ProcessEsp32Serum(void)
             SERUM_PARSE_CRC_ERROR
         )
         {
+            serum_crc_errors++;
+
             const char *msg =
                 "ESP32 SERUM: CRC fault detected\r\n";
 
@@ -520,6 +568,76 @@ void HAL_UART_RxCpltCallback(
             &huart2,
             (uint8_t *)&uart2_rx_byte,
             1
+        );
+    }
+}
+
+
+static void WriteU32BE(
+    uint8_t *buffer,
+    uint32_t value
+)
+{
+    buffer[0] = (uint8_t)(value >> 24);
+    buffer[1] = (uint8_t)(value >> 16);
+    buffer[2] = (uint8_t)(value >> 8);
+    buffer[3] = (uint8_t)value;
+}
+
+
+
+static void SendSerumTelemetry(
+    UART_HandleTypeDef *huart,
+    uint16_t sequence
+)
+{
+    SerumPacket packet = {0};
+
+    packet.version = SERUM_VERSION;
+    packet.type = SERUM_MSG_TELEMETRY;
+    packet.length = 16;
+    packet.sequence = sequence;
+
+    WriteU32BE(
+        &packet.payload[0],
+        serum_valid_packets
+    );
+
+    WriteU32BE(
+        &packet.payload[4],
+        serum_crc_errors
+    );
+
+    WriteU32BE(
+        &packet.payload[8],
+        serum_duplicates
+    );
+
+    WriteU32BE(
+        &packet.payload[12],
+        serum_processed_packets
+    );
+
+    uint8_t tx_buffer[
+        SERUM_HEADER_SIZE +
+        SERUM_MAX_PAYLOAD_SIZE +
+        SERUM_CRC_SIZE
+    ];
+
+    uint16_t tx_length =
+        Serum_EncodePacket(
+            &packet,
+            tx_buffer,
+            sizeof(tx_buffer)
+        );
+
+    if (tx_length > 0)
+    {
+        HAL_UART_Transmit(
+            huart,
+            tx_buffer,
+            tx_length,
+            HAL_MAX_DELAY
         );
     }
 }
