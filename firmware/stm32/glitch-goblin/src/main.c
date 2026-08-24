@@ -63,11 +63,28 @@ int main(void)
                     duplicate = true;
                 }
 
-                if (!duplicate)
+            if (!duplicate)
+            {
+                last_sequence = sequence;
+                sequence_initialized = 1;
+
+                if (
+                    serum_parser.packet.type == SERUM_MSG_COMMAND &&
+                    serum_parser.packet.length >= 1
+                )
                 {
-                    last_sequence = sequence;
-                    sequence_initialized = 1;
+                    uint8_t command =
+                        serum_parser.packet.payload[0];
+
+                    if (command == SERUM_CMD_TOGGLE_LED)
+                    {
+                        HAL_GPIO_TogglePin(
+                            LED_PORT,
+                            LED_PIN
+                        );
+                    }
                 }
+}
 
                 SerumPacket ack_packet = {0};
 

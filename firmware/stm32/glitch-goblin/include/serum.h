@@ -43,6 +43,11 @@ typedef struct
 
 typedef enum
 {
+    SERUM_CMD_TOGGLE_LED = 0x01
+} SerumCommand;
+
+typedef enum
+{
     SERUM_WAIT_SYNC_1,
     SERUM_WAIT_SYNC_2,
 

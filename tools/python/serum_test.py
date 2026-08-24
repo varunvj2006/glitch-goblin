@@ -88,8 +88,9 @@ def parse_serum_packet(packet):
 sequence = 1
 
 packet = build_serum_packet(
-    msg_type=0x01,
-    sequence=sequence
+    msg_type=0x02,
+    sequence=sequence,
+    payload=bytes([0x01])
 )
 
 print("Sending SERUM packet:")
