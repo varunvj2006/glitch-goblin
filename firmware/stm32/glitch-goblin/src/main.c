@@ -23,6 +23,9 @@ static uint8_t drop_next_ack = 1;
 static uint16_t last_sequence = 0;
 static uint8_t sequence_initialized = 0;
 
+static uint16_t esp32_last_sequence = 0;
+static uint8_t esp32_sequence_initialized = 0;
+
 static void LED_Init(void);
 static void UART1_Init(void);
 static void UART2_Init(void);
@@ -88,9 +91,50 @@ static void ProcessEsp32Serum(void)
             SERUM_PARSE_PACKET_READY
         )
         {
+            uint16_t sequence =
+                esp32_serum_parser.packet.sequence;
+
+            bool duplicate = false;
+
+            if (
+                esp32_sequence_initialized &&
+                sequence == esp32_last_sequence
+            )
+            {
+                duplicate = true;
+            }
+
+            if (!duplicate)
+            {
+                esp32_last_sequence = sequence;
+                esp32_sequence_initialized = 1;
+
+                const char *msg =
+                    "ESP32 SERUM: NEW packet\r\n";
+
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+            else
+            {
+                const char *msg =
+                    "ESP32 SERUM: DUPLICATE packet ignored\r\n";
+
+                HAL_UART_Transmit(
+                    &huart2,
+                    (uint8_t *)msg,
+                    strlen(msg),
+                    HAL_MAX_DELAY
+                );
+            }
+
             SendSerumAck(
                 &huart1,
-                esp32_serum_parser.packet.sequence
+                sequence
             );
         }
 

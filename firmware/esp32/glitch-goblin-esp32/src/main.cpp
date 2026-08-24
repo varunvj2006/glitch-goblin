@@ -126,34 +126,9 @@ void setup()
 
     SendSerumPing(
         1,
-        FAULT_NONE
+        FAULT_DUPLICATE
     ); 
 
-    delay(1000);
-
-    SendSerumPing(
-        2,
-        FAULT_BAD_CRC
-    );
-
-    delay(1000);
-
-   SendSerumPing(
-      3,
-      FAULT_DROP
-    );  
-
-    delay(1000);
-
-   SendSerumPing(
-      4,
-      FAULT_DUPLICATE);
-
-    delay(1000);
-
-    SendSerumPing(
-      5,
-      FAULT_DELAY);  
 }
 
 void loop()
