@@ -4,6 +4,7 @@
 HardwareSerial SerumUART(2);
 
 SerumParser serum_parser;
+uint16_t next_sequence = 1;
 
 typedef enum
 {
@@ -283,7 +284,37 @@ void SendStatsRequest(
         Serial.println("Requesting STM32 statistics...");
     }
 }
+void RunFaultTest(
+    FaultMode fault,
+    bool expect_ack
+)
+{
+    uint16_t sequence =
+        next_sequence++;
 
+    SendSerumPing(
+        sequence,
+        fault
+    );
+
+    bool ack =
+        WaitForAck(
+            sequence,
+            500
+        );
+
+    bool passed =
+        (ack == expect_ack);
+
+    if (passed)
+    {
+        Serial.println("PASS");
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+}
 
 void setup()
 {
@@ -300,153 +331,118 @@ void setup()
         &serum_parser
     );
 
+    Serial.setTimeout(2000);
+
     delay(1000);
 
-    Serial.println("ESP32 ready");
-
-    int passed = 0;
-    int total = 5;
-
     Serial.println();
-    Serial.println("=== GLITCH GOBLIN SERUM TEST ===");
+    Serial.println("=== GLITCH GOBLIN ===");
+    Serial.println("Commands:");
+    Serial.println("normal");
+    Serial.println("crc");
+    Serial.println("drop");
+    Serial.println("duplicate");
+    Serial.println("delay");
+    Serial.println("stats");
     Serial.println();
-
-
-    Serial.println("[1] NORMAL");
-
-    SendSerumPing(
-        1,
-        FAULT_NONE
-    );
-
-    if (WaitForAck(1, 500))
-    {
-        Serial.println("PASS");
-        passed++;
-    }
-    else
-    {
-        Serial.println("FAIL");
-    }
-
-    delay(500);
-
-
-    Serial.println();
-    Serial.println("[2] BAD CRC");
-
-    SendSerumPing(
-        2,
-        FAULT_BAD_CRC
-    );
-
-    if (!WaitForAck(2, 500))
-    {
-        Serial.println("PASS");
-        passed++;
-    }
-    else
-    {
-        Serial.println("FAIL");
-    }
-
-    delay(500);
-
-
-    Serial.println();
-    Serial.println("[3] DROP");
-
-    SendSerumPing(
-        3,
-        FAULT_DROP
-    );
-
-    if (!WaitForAck(3, 500))
-    {
-        Serial.println("PASS");
-        passed++;
-    }
-    else
-    {
-        Serial.println("FAIL");
-    }
-
-    delay(500);
-
-
-    Serial.println();
-    Serial.println("[4] DUPLICATE");
-
-    SendSerumPing(
-        4,
-        FAULT_DUPLICATE
-    );
-
-    if (WaitForAck(4, 500))
-    {
-        Serial.println("PASS");
-        passed++;
-    }
-    else
-    {
-        Serial.println("FAIL");
-    }
-
-    delay(500);
-
-
-    Serial.println();
-    Serial.println("[5] DELAY");
-
-    SendSerumPing(
-        5,
-        FAULT_DELAY
-    );
-
-    if (WaitForAck(5, 500))
-    {
-        Serial.println("PASS");
-        passed++;
-    }
-    else
-    {
-        Serial.println("FAIL");
-    }
-
-
-    Serial.println();
-    Serial.println("==============================");
-
-    Serial.print("RESULTS: ");
-    Serial.print(passed);
-    Serial.print(" / ");
-    Serial.print(total);
-    Serial.println(" PASSED");
-
-    Serial.println("==============================");
-
-
-    delay(500);
-
-    SendStatsRequest(6);
-
-    if (!WaitForAck(6, 500))
-    {
-        Serial.println(
-            "Stats request ACK failed"
-        );
-        return;
-    }
-
-    if (!WaitForTelemetry(6, 1000))
-    {
-        Serial.println(
-            "Telemetry response timed out"
-        );
-    }
 }
 
 
 void loop()
 {
+    if (!Serial.available())
+    {
+        return;
+    }
+
+    String command =
+        Serial.readStringUntil('\n');
+
+    command.trim();
+    command.toLowerCase();
+
+    if (command == "normal")
+    {
+        RunFaultTest(
+            FAULT_NONE,
+            true
+        );
+    }
+
+    else if (command == "crc")
+    {
+        RunFaultTest(
+            FAULT_BAD_CRC,
+            false
+        );
+    }
+
+    else if (command == "drop")
+    {
+        RunFaultTest(
+            FAULT_DROP,
+            false
+        );
+    }
+
+    else if (command == "duplicate")
+    {
+        RunFaultTest(
+            FAULT_DUPLICATE,
+            true
+        );
+    }
+
+    else if (command == "delay")
+    {
+        RunFaultTest(
+            FAULT_DELAY,
+            true
+        );
+    }
+
+    else if (command == "stats")
+    {
+        uint16_t sequence =
+            next_sequence++;
+
+        SendStatsRequest(
+            sequence
+        );
+
+        if (!WaitForAck(
+                sequence,
+                500
+            ))
+        {
+            Serial.println(
+                "Stats ACK failed"
+            );
+
+            return;
+        }
+
+        if (!WaitForTelemetry(
+                sequence,
+                1000
+            ))
+        {
+            Serial.println(
+                "Telemetry timeout"
+            );
+        }
+    }
+
+    else
+    {
+        Serial.print(
+            "Unknown command: "
+        );
+
+        Serial.println(
+            command
+        );
+    }
+
+    Serial.println();
 }
