@@ -15,6 +15,49 @@ typedef enum
 } FaultMode;
 
 
+
+bool WaitForAck(
+    uint16_t sequence,
+    uint32_t timeout_ms
+)
+{
+    uint32_t start = millis();
+
+    while (millis() - start < timeout_ms)
+    {
+        while (SerumUART.available())
+        {
+            uint8_t byte =
+                SerumUART.read();
+
+            SerumParseResult result =
+                SerumParser_ProcessByte(
+                    &serum_parser,
+                    byte
+                );
+
+            if (
+                result ==
+                SERUM_PARSE_PACKET_READY
+            )
+            {
+                if (
+                    serum_parser.packet.type ==
+                        SERUM_MSG_ACK &&
+                    serum_parser.packet.sequence ==
+                        sequence
+                )
+                {
+                    return true;
+                }
+            }
+        }
+
+        delay(1);
+    }
+
+    return false;
+}
 void SendSerumPing(
     uint16_t sequence,
     FaultMode fault
@@ -48,8 +91,7 @@ void SendSerumPing(
 
     if (fault == FAULT_BAD_CRC)
     {
-        tx_buffer[7] ^= 0x01;
-
+        tx_buffer[tx_length - 1] ^= 0x01;
         Serial.print("PING #");
         Serial.print(sequence);
         Serial.println(" sent [BAD CRC]");
@@ -124,91 +166,130 @@ void setup()
 
     Serial.println("ESP32 ready");
 
+    int passed = 0;
+    int total = 5;
+
+    Serial.println();
+    Serial.println("=== GLITCH GOBLIN SERUM TEST ===");
+    Serial.println();
+
+
+    Serial.println("[1] NORMAL");
+
     SendSerumPing(
         1,
+        FAULT_NONE
+    );
+
+    if (WaitForAck(1, 500))
+    {
+        Serial.println("PASS");
+        passed++;
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+
+    delay(500);
+
+
+    Serial.println();
+    Serial.println("[2] BAD CRC");
+
+    SendSerumPing(
+        2,
+        FAULT_BAD_CRC
+    );
+
+    if (!WaitForAck(2, 500))
+    {
+        Serial.println("PASS");
+        passed++;
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+
+    delay(500);
+
+
+    Serial.println();
+    Serial.println("[3] DROP");
+
+    SendSerumPing(
+        3,
+        FAULT_DROP
+    );
+
+    if (!WaitForAck(3, 500))
+    {
+        Serial.println("PASS");
+        passed++;
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+
+    delay(500);
+
+
+    Serial.println();
+    Serial.println("[4] DUPLICATE");
+
+    SendSerumPing(
+        4,
         FAULT_DUPLICATE
-    ); 
+    );
+
+    if (WaitForAck(4, 500))
+    {
+        Serial.println("PASS");
+        passed++;
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+
+    delay(500);
+
+
+    Serial.println();
+    Serial.println("[5] DELAY");
+
+    SendSerumPing(
+        5,
+        FAULT_DELAY
+    );
+
+    if (WaitForAck(5, 500))
+    {
+        Serial.println("PASS");
+        passed++;
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+
+
+    Serial.println();
+    Serial.println("==============================");
+
+    Serial.print("RESULTS: ");
+    Serial.print(passed);
+    Serial.print(" / ");
+    Serial.print(total);
+    Serial.println(" PASSED");
+
+    Serial.println("==============================");
 
 }
 
 void loop()
 {
-    while (SerumUART.available())
-    {
-        uint8_t byte =
-            SerumUART.read();
-
-        SerumParseResult result =
-            SerumParser_ProcessByte(
-                &serum_parser,
-                byte
-            );
-
-        if (
-            result ==
-            SERUM_PARSE_PACKET_READY
-        )
-        {
-            Serial.println(
-                "SERUM packet received"
-            );
-
-            Serial.print(
-                "Type: "
-            );
-
-            if (
-                serum_parser.packet.type ==
-                SERUM_MSG_ACK
-            )
-            {
-                Serial.println(
-                    "ACK"
-                );
-            }
-            else
-            {
-                Serial.print(
-                    "0x"
-                );
-
-                Serial.println(
-                    serum_parser.packet.type,
-                    HEX
-                );
-            }
-
-            Serial.print(
-                "Sequence: "
-            );
-
-            Serial.println(
-                serum_parser.packet.sequence
-            );
-
-            Serial.println(
-                "CRC: VALID"
-            );
-        }
-
-        else if (
-            result ==
-            SERUM_PARSE_CRC_ERROR
-        )
-        {
-            Serial.println(
-                "SERUM CRC ERROR"
-            );
-        }
-
-        else if (
-            result ==
-            SERUM_PARSE_FORMAT_ERROR
-        )
-        {
-            Serial.println(
-                "SERUM FORMAT ERROR"
-            );
-        }
-    }
+    
 }
