@@ -4,10 +4,20 @@
 HardwareSerial SerumUART(2);
 
 SerumParser serum_parser;
+typedef enum
+{
+    FAULT_NONE,
+    FAULT_BAD_CRC,
+    FAULT_DROP,
+    FAULT_DUPLICATE,
+    FAULT_DELAY
+
+} FaultMode;
+
 
 void SendSerumPing(
     uint16_t sequence,
-    bool corrupt
+    FaultMode fault
 )
 {
     SerumPacket ping = {0};
@@ -32,12 +42,42 @@ void SendSerumPing(
 
     if (tx_length == 0)
     {
+        Serial.println("Packet encoding failed");
         return;
     }
 
-    if (corrupt)
+    if (fault == FAULT_BAD_CRC)
     {
         tx_buffer[7] ^= 0x01;
+
+        Serial.print("PING #");
+        Serial.print(sequence);
+        Serial.println(" sent [BAD CRC]");
+
+        SerumUART.write(
+            tx_buffer,
+            tx_length
+        );
+
+        return;
+    }
+
+    if (fault == FAULT_DROP)
+    {
+        Serial.print("PING #");
+        Serial.print(sequence);
+        Serial.println(" [DROPPED]");
+
+        return;
+    }
+
+    if (fault == FAULT_DELAY)
+    {
+        Serial.print("PING #");
+        Serial.print(sequence);
+        Serial.println(" [DELAYED]");
+
+        delay(2000);
     }
 
     SerumUART.write(
@@ -48,9 +88,16 @@ void SendSerumPing(
     Serial.print("PING #");
     Serial.print(sequence);
 
-    if (corrupt)
+    if (fault == FAULT_DUPLICATE)
     {
-        Serial.println(" sent [CORRUPTED]");
+        Serial.println(" sent [DUPLICATE]");
+
+        delay(50);
+
+        SerumUART.write(
+            tx_buffer,
+            tx_length
+        );
     }
     else
     {
@@ -79,15 +126,34 @@ void setup()
 
     SendSerumPing(
         1,
-        false
-    );
+        FAULT_NONE
+    ); 
 
     delay(1000);
 
     SendSerumPing(
         2,
-        true
+        FAULT_BAD_CRC
     );
+
+    delay(1000);
+
+   SendSerumPing(
+      3,
+      FAULT_DROP
+    );  
+
+    delay(1000);
+
+   SendSerumPing(
+      4,
+      FAULT_DUPLICATE);
+
+    delay(1000);
+
+    SendSerumPing(
+      5,
+      FAULT_DELAY);  
 }
 
 void loop()
