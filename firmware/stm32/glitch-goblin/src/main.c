@@ -83,11 +83,46 @@ static void ProcessEsp32Serum(void)
                 byte
             );
 
-        if (result == SERUM_PARSE_PACKET_READY)
+        if (
+            result ==
+            SERUM_PARSE_PACKET_READY
+        )
         {
             SendSerumAck(
                 &huart1,
                 esp32_serum_parser.packet.sequence
+            );
+        }
+
+        else if (
+            result ==
+            SERUM_PARSE_CRC_ERROR
+        )
+        {
+            const char *msg =
+                "ESP32 SERUM: CRC fault detected\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
+            );
+        }
+
+        else if (
+            result ==
+            SERUM_PARSE_FORMAT_ERROR
+        )
+        {
+            const char *msg =
+                "ESP32 SERUM: format error\r\n";
+
+            HAL_UART_Transmit(
+                &huart2,
+                (uint8_t *)msg,
+                strlen(msg),
+                HAL_MAX_DELAY
             );
         }
     }
