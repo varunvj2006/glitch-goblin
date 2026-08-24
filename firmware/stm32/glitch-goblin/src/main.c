@@ -8,6 +8,7 @@
 #define LED_PORT GPIOA
 
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart1;
 
 volatile uint8_t uart_rx_byte;
 RingBuffer uart_rx_buffer;
@@ -19,6 +20,7 @@ static uint8_t sequence_initialized = 0;
 
 static void LED_Init(void);
 static void UART2_Init(void);
+static void UART1_Init(void);
 
 int main(void)
 {
@@ -29,6 +31,7 @@ int main(void)
 
     LED_Init();
     UART2_Init();
+    UART1_Init();
 
     HAL_UART_Receive_IT(
         &huart2,
@@ -36,9 +39,38 @@ int main(void)
         1
     );
 
+    uint8_t esp32_byte;
+    uint8_t esp32_message_received = 0;
+
     while (1)
     {
         uint8_t byte;
+        if (HAL_UART_Receive(
+        &huart1,
+        &esp32_byte,
+        1,
+        1
+        ) == HAL_OK)
+        {
+        if (esp32_byte == '\n')
+        {
+            esp32_message_received = 1;
+        }
+        }
+
+        if (esp32_message_received)
+        {
+            const char *reply = "HELLO ESP32\r\n";
+
+            HAL_UART_Transmit(
+                &huart1,
+                (uint8_t *)reply,
+                strlen(reply),
+                HAL_MAX_DELAY
+            );
+
+            esp32_message_received = 0;
+        }
 
         while (RingBuffer_Pop(&uart_rx_buffer, &byte))
         {
@@ -171,6 +203,33 @@ static void LED_Init(void)
     gpio.Speed = GPIO_SPEED_FREQ_LOW;
 
     HAL_GPIO_Init(LED_PORT, &gpio);
+}
+
+static void UART1_Init(void)
+{
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_USART1_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio = {0};
+
+    gpio.Pin = GPIO_PIN_9 | GPIO_PIN_10;
+    gpio.Mode = GPIO_MODE_AF_PP;
+    gpio.Pull = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    gpio.Alternate = GPIO_AF7_USART1;
+
+    HAL_GPIO_Init(GPIOA, &gpio);
+
+    huart1.Instance = USART1;
+    huart1.Init.BaudRate = 115200;
+    huart1.Init.WordLength = UART_WORDLENGTH_8B;
+    huart1.Init.StopBits = UART_STOPBITS_1;
+    huart1.Init.Parity = UART_PARITY_NONE;
+    huart1.Init.Mode = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+
+    HAL_UART_Init(&huart1);
 }
 
 static void UART2_Init(void)
