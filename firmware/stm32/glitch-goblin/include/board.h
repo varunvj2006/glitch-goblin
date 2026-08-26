@@ -6,7 +6,6 @@
 #define LED_PIN  GPIO_PIN_5
 #define LED_PORT GPIOA
 
-extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
 void Board_UART1_Write(

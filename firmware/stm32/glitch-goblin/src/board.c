@@ -1,6 +1,5 @@
 #include "board.h"
 
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 static void LED_Init(void);
@@ -101,7 +100,6 @@ static void UART1_Init(void)
 
     USART1->CR1 |= USART_CR1_UE;
 
-    huart1.Instance = USART1;
 
     NVIC_SetPriority(
         USART1_IRQn,

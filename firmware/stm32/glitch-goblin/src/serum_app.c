@@ -2,7 +2,6 @@
 #include "serum.h"
 #include "ring_buffer.h"
 #include "board.h"
-
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -33,17 +32,30 @@ static uint32_t serum_processed_packets = 0;
 static uint8_t pc_drop_next_ack = 1;
 
 
+typedef enum
+{
+    SERUM_LINK_ESP32,
+    SERUM_LINK_PC
+} SerumLink;
+
+
 static void ProcessEsp32Serum(void);
 static void ProcessPcSerum(void);
 
 static void SendSerumAck(
-    UART_HandleTypeDef *huart,
+    SerumLink link,
     uint16_t sequence
 );
 
 static void SendSerumTelemetry(
-    UART_HandleTypeDef *huart,
+    SerumLink link,
     uint16_t sequence
+);
+
+static void SendSerumBuffer(
+    SerumLink link,
+    const uint8_t *buffer,
+    uint16_t length
 );
 
 static void WriteU32BE(
@@ -128,12 +140,12 @@ static void ProcessEsp32Serum(void)
             if (stats_requested)
             {
                 SendSerumAck(
-                    &huart1,
+                    SERUM_LINK_ESP32,
                     sequence
                 );
 
                 SendSerumTelemetry(
-                    &huart1,
+                    SERUM_LINK_ESP32,
                     sequence
                 );
 
@@ -207,7 +219,7 @@ static void ProcessEsp32Serum(void)
             }
 
             SendSerumAck(
-                &huart1,
+                SERUM_LINK_ESP32,
                 sequence
             );
         }
@@ -319,7 +331,7 @@ static void ProcessPcSerum(void)
             else
             {
                 SendSerumAck(
-                    &huart2,
+                    SERUM_LINK_PC,
                     sequence
                 );
             }
@@ -360,8 +372,38 @@ static void ProcessPcSerum(void)
 }
 
 
+static void SendSerumBuffer(
+    SerumLink link,
+    const uint8_t *buffer,
+    uint16_t length
+)
+{
+    if (length == 0)
+    {
+        return;
+    }
+
+    if (link == SERUM_LINK_ESP32)
+    {
+        Board_UART1_Write(
+            buffer,
+            length
+        );
+    }
+    else if (link == SERUM_LINK_PC)
+    {
+        HAL_UART_Transmit(
+            &huart2,
+            (uint8_t *)buffer,
+            length,
+            HAL_MAX_DELAY
+        );
+    }
+}
+
+
 static void SendSerumAck(
-    UART_HandleTypeDef *huart,
+    SerumLink link,
     uint16_t sequence
 )
 {
@@ -391,25 +433,11 @@ static void SendSerumAck(
             sizeof(tx_buffer)
         );
 
-    if (tx_length > 0)
-    {
-        if (huart->Instance == USART1)
-        {
-            Board_UART1_Write(
-                tx_buffer,
-                tx_length
-            );
-        }
-        else
-        {
-            HAL_UART_Transmit(
-                huart,
-                tx_buffer,
-                tx_length,
-                HAL_MAX_DELAY
-            );
-        }
-    }
+    SendSerumBuffer(
+        link,
+        tx_buffer,
+        tx_length
+    );
 }
 
 
@@ -433,7 +461,7 @@ static void WriteU32BE(
 
 
 static void SendSerumTelemetry(
-    UART_HandleTypeDef *huart,
+    SerumLink link,
     uint16_t sequence
 )
 {
@@ -483,25 +511,11 @@ static void SendSerumTelemetry(
             sizeof(tx_buffer)
         );
 
-    if (tx_length > 0)
-    {
-        if (huart->Instance == USART1)
-        {
-            Board_UART1_Write(
-                tx_buffer,
-                tx_length
-            );
-        }
-        else
-        {
-            HAL_UART_Transmit(
-                huart,
-                tx_buffer,
-                tx_length,
-                HAL_MAX_DELAY
-            );
-        }
-    }
+    SendSerumBuffer(
+        link,
+        tx_buffer,
+        tx_length
+    );
 }
 
 
