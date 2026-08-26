@@ -8,7 +8,6 @@
 #include <string.h>
 
 
-static volatile uint8_t uart1_rx_byte;
 static volatile uint8_t uart2_rx_byte;
 
 static RingBuffer esp32_rx_buffer;
@@ -71,11 +70,7 @@ void SerumApp_Init(void)
         &pc_serum_parser
     );
 
-    HAL_UART_Receive_IT(
-        &huart1,
-        (uint8_t *)&uart1_rx_byte,
-        1
-    );
+    USART1->CR1 |= USART_CR1_RXNEIE;
 
     HAL_UART_Receive_IT(
         &huart2,
@@ -499,9 +494,16 @@ static void SendSerumTelemetry(
 
 void USART1_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(
-        &huart1
-    );
+    if (USART1->SR & USART_SR_RXNE)
+    {
+        uint8_t byte =
+            (uint8_t)USART1->DR;
+
+        RingBuffer_Push(
+            &esp32_rx_buffer,
+            byte
+        );
+    }
 }
 
 
@@ -517,27 +519,7 @@ void HAL_UART_RxCpltCallback(
     UART_HandleTypeDef *huart
 )
 {
-    if (
-        huart->Instance ==
-        USART1
-    )
-    {
-        RingBuffer_Push(
-            &esp32_rx_buffer,
-            uart1_rx_byte
-        );
-
-        HAL_UART_Receive_IT(
-            &huart1,
-            (uint8_t *)&uart1_rx_byte,
-            1
-        );
-    }
-
-    else if (
-        huart->Instance ==
-        USART2
-    )
+    if (huart->Instance == USART2)
     {
         RingBuffer_Push(
             &pc_rx_buffer,
