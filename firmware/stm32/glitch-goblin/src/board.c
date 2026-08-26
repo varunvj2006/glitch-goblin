@@ -16,28 +16,19 @@ void Board_Init(void)
 
 void Board_LED_Toggle(void)
 {
-    HAL_GPIO_TogglePin(
-        LED_PORT,
-        LED_PIN
-    );
+    GPIOA->ODR ^= (1U << 5);    //a easy XOR for toglling
 }
 
 static void LED_Init(void)
 {
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-
-    GPIO_InitTypeDef gpio = {0};
-
-    gpio.Pin = LED_PIN;
-    gpio.Mode = GPIO_MODE_OUTPUT_PP;
-    gpio.Pull = GPIO_NOPULL;
-    gpio.Speed = GPIO_SPEED_FREQ_LOW;
-
-    HAL_GPIO_Init(
-        LED_PORT,
-        &gpio
-    );
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;   // enable reg-clock using the existing bit-mask for GPIOA
+    GPIOA->MODER &= ~(3U << (5 * 2));  // clear the bits for pin 5  (2 BITS)
+    GPIOA->MODER |=  (1U << (5 * 2));  // set the 01 for pin 5 for output mode 
+    GPIOA->OTYPER &= ~(1U << 5);     //set the type to push/pull (1 BIT)
+    GPIOA->PUPDR &= ~(3U << (5 * 2));  //reset the pull-up/pull-down bits to none for pin 5  (2 BITS)
+    GPIOA->OSPEEDR &= ~(3U << (5 * 2));  //reset the speed bits to low for pin 5 (2 BITS)
 }
+
 
 static void UART1_Init(void)
 {
