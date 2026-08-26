@@ -19,6 +19,7 @@ void Board_LED_Toggle(void)
     GPIOA->ODR ^= (1U << 5);    //a easy XOR for toglling
 }
 
+
 static void LED_Init(void)
 {
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;   // enable reg-clock using the existing bit-mask for GPIOA
@@ -29,6 +30,25 @@ static void LED_Init(void)
     GPIOA->OSPEEDR &= ~(3U << (5 * 2));  //reset the speed bits to low for pin 5 (2 BITS)
 }
 
+
+void Board_UART1_Write(
+    const uint8_t *data,
+    uint16_t length
+)
+{
+    for (uint16_t i = 0; i < length; i++)
+    {
+        while (!(USART1->SR & USART_SR_TXE))
+        {
+        }
+
+        USART1->DR = data[i];
+    }
+
+    while (!(USART1->SR & USART_SR_TC))
+    {
+    }
+}
 
 static void UART1_Init(void)
 {

@@ -9,6 +9,10 @@
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
+void Board_UART1_Write(
+    const uint8_t *data,
+    uint16_t length
+);
 void Board_Init(void);
 void Board_LED_Toggle(void);
 

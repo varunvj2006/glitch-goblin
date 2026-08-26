@@ -396,7 +396,14 @@ static void SendSerumAck(
             sizeof(tx_buffer)
         );
 
-    if (tx_length > 0)
+    if (huart->Instance == USART1)
+    {
+        Board_UART1_Write(
+            tx_buffer,
+            tx_length
+        );
+    }
+    else
     {
         HAL_UART_Transmit(
             huart,
