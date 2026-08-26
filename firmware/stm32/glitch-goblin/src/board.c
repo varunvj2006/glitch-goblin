@@ -49,59 +49,69 @@ void Board_UART1_Write(
     {
     }
 }
-
 static void UART1_Init(void)
 {
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_USART1_CLK_ENABLE();
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
-    GPIO_InitTypeDef gpio = {0};
-
-    gpio.Pin =
-        GPIO_PIN_9 |
-        GPIO_PIN_10;
-
-    gpio.Mode =
-        GPIO_MODE_AF_PP;
-
-    gpio.Pull =
-        GPIO_NOPULL;
-
-    gpio.Speed =
-        GPIO_SPEED_FREQ_VERY_HIGH;
-
-    gpio.Alternate =
-        GPIO_AF7_USART1;
-
-    HAL_GPIO_Init(
-        GPIOA,
-        &gpio
+    GPIOA->MODER &= ~(
+        (3U << (9 * 2)) |
+        (3U << (10 * 2))
     );
+
+    GPIOA->MODER |= (
+        (2U << (9 * 2)) |
+        (2U << (10 * 2))
+    );
+
+    GPIOA->OTYPER &= ~(
+        (1U << 9) |
+        (1U << 10)
+    );
+
+    GPIOA->PUPDR &= ~(
+        (3U << (9 * 2)) |
+        (3U << (10 * 2))
+    );
+
+    GPIOA->OSPEEDR |= (
+        (2U << (9 * 2)) |
+        (2U << (10 * 2))
+    );
+
+    GPIOA->AFR[1] &= ~(
+        (0xFU << 4) |
+        (0xFU << 8)
+    );
+
+    GPIOA->AFR[1] |= (
+        (7U << 4) |
+        (7U << 8)
+    );
+
+    USART1->CR1 = 0;
+    USART1->CR2 = 0;
+    USART1->CR3 = 0;
+
+    USART1->BRR = 0x008B;
+
+    USART1->CR1 |=
+        USART_CR1_TE |
+        USART_CR1_RE;
+
+    USART1->CR1 |= USART_CR1_UE;
 
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = 115200;
-    huart1.Init.WordLength = UART_WORDLENGTH_8B;
-    huart1.Init.StopBits = UART_STOPBITS_1;
-    huart1.Init.Parity = UART_PARITY_NONE;
-    huart1.Init.Mode = UART_MODE_TX_RX;
-    huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 
-    HAL_UART_Init(
-        &huart1
-    );
-
-    HAL_NVIC_SetPriority(
+    NVIC_SetPriority(
         USART1_IRQn,
-        1,
-        0
+        1
     );
 
-    HAL_NVIC_EnableIRQ(
+    NVIC_EnableIRQ(
         USART1_IRQn
     );
 }
-
 static void UART2_Init(void)
 {
     __HAL_RCC_GPIOA_CLK_ENABLE();

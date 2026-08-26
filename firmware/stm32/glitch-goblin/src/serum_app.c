@@ -391,21 +391,24 @@ static void SendSerumAck(
             sizeof(tx_buffer)
         );
 
-    if (huart->Instance == USART1)
+    if (tx_length > 0)
     {
-        Board_UART1_Write(
-            tx_buffer,
-            tx_length
-        );
-    }
-    else
-    {
-        HAL_UART_Transmit(
-            huart,
-            tx_buffer,
-            tx_length,
-            HAL_MAX_DELAY
-        );
+        if (huart->Instance == USART1)
+        {
+            Board_UART1_Write(
+                tx_buffer,
+                tx_length
+            );
+        }
+        else
+        {
+            HAL_UART_Transmit(
+                huart,
+                tx_buffer,
+                tx_length,
+                HAL_MAX_DELAY
+            );
+        }
     }
 }
 
@@ -482,12 +485,22 @@ static void SendSerumTelemetry(
 
     if (tx_length > 0)
     {
-        HAL_UART_Transmit(
-            huart,
-            tx_buffer,
-            tx_length,
-            HAL_MAX_DELAY
-        );
+        if (huart->Instance == USART1)
+        {
+            Board_UART1_Write(
+                tx_buffer,
+                tx_length
+            );
+        }
+        else
+        {
+            HAL_UART_Transmit(
+                huart,
+                tx_buffer,
+                tx_length,
+                HAL_MAX_DELAY
+            );
+        }
     }
 }
 
