@@ -15,5 +15,6 @@ void TestRunner_RunReliablePing(void);
 void TestRunner_RunBenchmark(void);
 
 void TestRunner_RunChaos(void);
+void TestRunner_RunReplay(void);
 
 #endif

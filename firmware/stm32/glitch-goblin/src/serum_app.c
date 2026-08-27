@@ -2,6 +2,8 @@
 #include "serum.h"
 #include "ring_buffer.h"
 #include "board.h"
+#include "sequence_tracker.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -13,9 +15,6 @@ static RingBuffer pc_rx_buffer;
 static SerumParser esp32_serum_parser;
 static SerumParser pc_serum_parser;
 
-
-static uint16_t esp32_last_sequence = 0;
-static uint8_t esp32_sequence_initialized = 0;
 
 static uint16_t pc_last_sequence = 0;
 static uint8_t pc_sequence_initialized = 0;
@@ -64,6 +63,8 @@ static void WriteU32BE(
 
 void SerumApp_Init(void)
 {
+    SequenceTracker_Init();
+
     RingBuffer_Init(
         &esp32_rx_buffer
     );
@@ -80,9 +81,11 @@ void SerumApp_Init(void)
         &pc_serum_parser
     );
 
-    USART1->CR1 |= USART_CR1_RXNEIE;
+    USART1->CR1 |=
+        USART_CR1_RXNEIE;
 
-    USART2->CR1 |= USART_CR1_RXNEIE;
+    USART2->CR1 |=
+        USART_CR1_RXNEIE;
 }
 
 
@@ -118,18 +121,22 @@ static void ProcessEsp32Serum(void)
             uint16_t sequence =
                 esp32_serum_parser.packet.sequence;
 
-            bool stats_requested = false;
+            bool stats_requested =
+                false;
 
             if (
                 esp32_serum_parser.packet.type ==
                     SERUM_MSG_COMMAND &&
-                esp32_serum_parser.packet.length >= 1 &&
+                esp32_serum_parser.packet.length >=
+                    1 &&
                 esp32_serum_parser.packet.payload[0] ==
                     SERUM_CMD_GET_STATS
             )
             {
-                stats_requested = true;
+                stats_requested =
+                    true;
             }
+
 
             if (stats_requested)
             {
@@ -146,33 +153,42 @@ static void ProcessEsp32Serum(void)
                 continue;
             }
 
+
             serum_valid_packets++;
 
-            bool duplicate = false;
 
-            if (
-                esp32_sequence_initialized &&
-                sequence ==
-                    esp32_last_sequence
-            )
+            bool duplicate =
+                SequenceTracker_HasSeen(
+                    sequence
+                );
+
+
+            if (duplicate)
             {
-                duplicate = true;
+                serum_duplicates++;
+
+                const char *msg =
+                    "ESP32 SERUM: DUPLICATE packet ignored\r\n";
+
+                Board_UART2_Write(
+                    (const uint8_t *)msg,
+                    strlen(msg)
+                );
             }
 
-            if (!duplicate)
+            else
             {
-                esp32_last_sequence =
-                    sequence;
-
-                esp32_sequence_initialized =
-                    1;
+                SequenceTracker_Remember(
+                    sequence
+                );
 
                 serum_processed_packets++;
 
                 if (
                     esp32_serum_parser.packet.type ==
                         SERUM_MSG_COMMAND &&
-                    esp32_serum_parser.packet.length >= 1
+                    esp32_serum_parser.packet.length >=
+                        1
                 )
                 {
                     uint8_t command =
@@ -195,23 +211,12 @@ static void ProcessEsp32Serum(void)
                     strlen(msg)
                 );
             }
-            else
-            {
-                serum_duplicates++;
 
-                const char *msg =
-                    "ESP32 SERUM: DUPLICATE packet ignored\r\n";
-
-                Board_UART2_Write(
-                    (const uint8_t *)msg,
-                    strlen(msg)
-                );
-            }
 
             SendSerumAck(
-        SERUM_LINK_ESP32,
-        sequence
-    );
+                SERUM_LINK_ESP32,
+                sequence
+            );
         }
 
         else if (
@@ -272,7 +277,8 @@ static void ProcessPcSerum(void)
             uint16_t sequence =
                 pc_serum_parser.packet.sequence;
 
-            bool duplicate = false;
+            bool duplicate =
+                false;
 
             if (
                 pc_sequence_initialized &&
@@ -280,8 +286,10 @@ static void ProcessPcSerum(void)
                     pc_last_sequence
             )
             {
-                duplicate = true;
+                duplicate =
+                    true;
             }
+
 
             if (!duplicate)
             {
@@ -294,7 +302,8 @@ static void ProcessPcSerum(void)
                 if (
                     pc_serum_parser.packet.type ==
                         SERUM_MSG_COMMAND &&
-                    pc_serum_parser.packet.length >= 1
+                    pc_serum_parser.packet.length >=
+                        1
                 )
                 {
                     uint8_t command =
@@ -310,10 +319,13 @@ static void ProcessPcSerum(void)
                 }
             }
 
+
             if (pc_drop_next_ack)
             {
-                pc_drop_next_ack = 0;
+                pc_drop_next_ack =
+                    0;
             }
+
             else
             {
                 SendSerumAck(
@@ -365,14 +377,21 @@ static void SendSerumBuffer(
         return;
     }
 
-    if (link == SERUM_LINK_ESP32)
+    if (
+        link ==
+        SERUM_LINK_ESP32
+    )
     {
         Board_UART1_Write(
             buffer,
             length
         );
     }
-    else if (link == SERUM_LINK_PC)
+
+    else if (
+        link ==
+        SERUM_LINK_PC
+    )
     {
         Board_UART2_Write(
             buffer,
@@ -395,7 +414,8 @@ static void SendSerumAck(
     ack_packet.type =
         SERUM_MSG_ACK;
 
-    ack_packet.length = 0;
+    ack_packet.length =
+        0;
 
     ack_packet.sequence =
         sequence;
@@ -427,13 +447,19 @@ static void WriteU32BE(
 )
 {
     buffer[0] =
-        (uint8_t)(value >> 24);
+        (uint8_t)(
+            value >> 24
+        );
 
     buffer[1] =
-        (uint8_t)(value >> 16);
+        (uint8_t)(
+            value >> 16
+        );
 
     buffer[2] =
-        (uint8_t)(value >> 8);
+        (uint8_t)(
+            value >> 8
+        );
 
     buffer[3] =
         (uint8_t)value;
@@ -453,10 +479,12 @@ static void SendSerumTelemetry(
     packet.type =
         SERUM_MSG_TELEMETRY;
 
-    packet.length = 16;
+    packet.length =
+        16;
 
     packet.sequence =
         sequence;
+
 
     WriteU32BE(
         &packet.payload[0],
@@ -477,6 +505,7 @@ static void SendSerumTelemetry(
         &packet.payload[12],
         serum_processed_packets
     );
+
 
     uint8_t tx_buffer[
         SERUM_HEADER_SIZE +
@@ -501,7 +530,10 @@ static void SendSerumTelemetry(
 
 void USART1_IRQHandler(void)
 {
-    if (USART1->SR & USART_SR_RXNE)
+    if (
+        USART1->SR &
+        USART_SR_RXNE
+    )
     {
         uint8_t byte =
             (uint8_t)USART1->DR;
@@ -516,7 +548,10 @@ void USART1_IRQHandler(void)
 
 void USART2_IRQHandler(void)
 {
-    if (USART2->SR & USART_SR_RXNE)
+    if (
+        USART2->SR &
+        USART_SR_RXNE
+    )
     {
         uint8_t byte =
             (uint8_t)USART2->DR;
@@ -527,6 +562,3 @@ void USART2_IRQHandler(void)
         );
     }
 }
-
-
-

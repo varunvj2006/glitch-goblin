@@ -341,3 +341,71 @@ void TestRunner_RunChaos(void)
 
     PrintChaosVerdict();
 }
+void TestRunner_RunReplay(void)
+{
+    uint16_t replay_sequence =
+        SerumLink_NextSequence();
+
+    Serial.println();
+    Serial.println("=== REPLAY TEST ===");
+
+    Serial.print("Original sequence: ");
+    Serial.println(replay_sequence);
+
+    SerumLink_SendPing(
+        replay_sequence,
+        FAULT_NONE
+    );
+
+    SerumLink_WaitForAck(
+        replay_sequence,
+        Config_GetAckTimeoutMs()
+    );
+
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        uint16_t sequence =
+            SerumLink_NextSequence();
+
+        SerumLink_SendPing(
+            sequence,
+            FAULT_NONE
+        );
+
+        SerumLink_WaitForAck(
+            sequence,
+            Config_GetAckTimeoutMs()
+        );
+    }
+
+    Serial.print("Replaying old sequence: ");
+    Serial.println(replay_sequence);
+
+    SerumLink_SendPing(
+        replay_sequence,
+        FAULT_NONE
+    );
+
+    bool ack =
+        SerumLink_WaitForAck(
+            replay_sequence,
+            Config_GetAckTimeoutMs()
+        );
+
+    if (ack)
+    {
+        Serial.println(
+            "Replay ACK received"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "Replay ACK missing"
+        );
+    }
+
+    Serial.println(
+        "Check STM32 monitor for DUPLICATE"
+    );
+}

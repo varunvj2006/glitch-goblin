@@ -37,7 +37,8 @@ static void PrintHelp(void)
     Serial.println(
         "stats"
     );
-
+    Serial.println("replay");
+    
     Serial.println(
         "reliable"
     );
@@ -358,6 +359,13 @@ void Console_Process(void)
     )
     {
         PrintHelp();
+    }
+    else if (
+    command ==
+    "replay"
+    )
+    {
+        TestRunner_RunReplay();
     }
     else if (
         command.startsWith(
