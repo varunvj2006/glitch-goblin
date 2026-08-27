@@ -5,6 +5,70 @@
 #include "serum_link.h"
 #include "stats.h"
 
+static void PrintChaosVerdict(void)
+{
+    const float minimum_delivery_rate =
+        95.0f;
+
+    const float minimum_recovery_rate =
+        90.0f;
+
+    float delivery_rate =
+        Stats_GetDeliveryRate();
+
+    float recovery_rate =
+        Stats_GetRecoveryRate();
+
+    bool passed =
+        delivery_rate >=
+            minimum_delivery_rate &&
+        recovery_rate >=
+            minimum_recovery_rate;
+
+    Serial.println();
+
+    Serial.println(
+        "=== CHAOS TEST VERDICT ==="
+    );
+
+    Serial.print(
+        "Delivery requirement: "
+    );
+    Serial.print(
+        minimum_delivery_rate,
+        0
+    );
+    Serial.println("%");
+
+    Serial.print(
+        "Recovery requirement: "
+    );
+    Serial.print(
+        minimum_recovery_rate,
+        0
+    );
+    Serial.println("%");
+
+    Serial.println();
+
+    if (passed)
+    {
+        Serial.println(
+            "RESULT: PASS"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "RESULT: FAIL"
+        );
+    }
+
+    Serial.println(
+        "=========================="
+    );
+}
+
 void TestRunner_RunFault(
     FaultMode fault,
     bool expect_ack
@@ -264,4 +328,6 @@ void TestRunner_RunChaos(void)
     Stats_PrintChaos();
 
     Stats_PrintLink();
+
+    PrintChaosVerdict();
 }

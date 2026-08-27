@@ -463,7 +463,8 @@ bool SerumLink_SendReliablePacket(
                 start_us;
 
             Stats_RecordSuccess(
-                rtt_us
+                rtt_us,
+                attempt
             );
 
             Serial.print("ACK #");
@@ -624,7 +625,8 @@ bool SerumLink_SendReliableChaosPacket(
                 start_us;
 
             Stats_RecordSuccess(
-                rtt_us
+                rtt_us,
+                attempt
             );
 
             Serial.print(
