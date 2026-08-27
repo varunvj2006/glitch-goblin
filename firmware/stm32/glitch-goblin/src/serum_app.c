@@ -7,7 +7,6 @@
 #include <string.h>
 
 
-static volatile uint8_t uart2_rx_byte;
 
 static RingBuffer esp32_rx_buffer;
 static RingBuffer pc_rx_buffer;
@@ -84,11 +83,7 @@ void SerumApp_Init(void)
 
     USART1->CR1 |= USART_CR1_RXNEIE;
 
-    HAL_UART_Receive_IT(
-        &huart2,
-        (uint8_t *)&uart2_rx_byte,
-        1
-    );
+    USART2->CR1 |= USART_CR1_RXNEIE;
 }
 
 
@@ -196,11 +191,9 @@ static void ProcessEsp32Serum(void)
                 const char *msg =
                     "ESP32 SERUM: NEW packet\r\n";
 
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
+                Board_UART2_Write(
+                    (const uint8_t *)msg,
+                    strlen(msg)
                 );
             }
             else
@@ -210,11 +203,9 @@ static void ProcessEsp32Serum(void)
                 const char *msg =
                     "ESP32 SERUM: DUPLICATE packet ignored\r\n";
 
-                HAL_UART_Transmit(
-                    &huart2,
-                    (uint8_t *)msg,
-                    strlen(msg),
-                    HAL_MAX_DELAY
+                Board_UART2_Write(
+                    (const uint8_t *)msg,
+                    strlen(msg)
                 );
             }
 
@@ -234,11 +225,9 @@ static void ProcessEsp32Serum(void)
             const char *msg =
                 "ESP32 SERUM: CRC fault detected\r\n";
 
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
+            Board_UART2_Write(
+                (const uint8_t *)msg,
+                strlen(msg)
             );
         }
 
@@ -250,11 +239,9 @@ static void ProcessEsp32Serum(void)
             const char *msg =
                 "ESP32 SERUM: format error\r\n";
 
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
+            Board_UART2_Write(
+                (const uint8_t *)msg,
+                strlen(msg)
             );
         }
     }
@@ -345,11 +332,9 @@ static void ProcessPcSerum(void)
             const char *msg =
                 "SERUM: CRC FAILED - packet rejected >:(\r\n";
 
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
+            Board_UART2_Write(
+                (const uint8_t *)msg,
+                strlen(msg)
             );
         }
 
@@ -361,11 +346,9 @@ static void ProcessPcSerum(void)
             const char *msg =
                 "SERUM: malformed packet\r\n";
 
-            HAL_UART_Transmit(
-                &huart2,
-                (uint8_t *)msg,
-                strlen(msg),
-                HAL_MAX_DELAY
+            Board_UART2_Write(
+                (const uint8_t *)msg,
+                strlen(msg)
             );
         }
     }
@@ -392,11 +375,9 @@ static void SendSerumBuffer(
     }
     else if (link == SERUM_LINK_PC)
     {
-        HAL_UART_Transmit(
-            &huart2,
-            (uint8_t *)buffer,
-            length,
-            HAL_MAX_DELAY
+        Board_UART2_Write(
+            buffer,
+            length
         );
     }
 }
@@ -536,27 +517,17 @@ void USART1_IRQHandler(void)
 
 void USART2_IRQHandler(void)
 {
-    HAL_UART_IRQHandler(
-        &huart2
-    );
-}
-
-
-void HAL_UART_RxCpltCallback(
-    UART_HandleTypeDef *huart
-)
-{
-    if (huart->Instance == USART2)
+    if (USART2->SR & USART_SR_RXNE)
     {
+        uint8_t byte =
+            (uint8_t)USART2->DR;
+
         RingBuffer_Push(
             &pc_rx_buffer,
-            uart2_rx_byte
-        );
-
-        HAL_UART_Receive_IT(
-            &huart2,
-            (uint8_t *)&uart2_rx_byte,
-            1
+            byte
         );
     }
 }
+
+
+

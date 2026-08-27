@@ -6,9 +6,12 @@
 #define LED_PIN  GPIO_PIN_5
 #define LED_PORT GPIOA
 
-extern UART_HandleTypeDef huart2;
 
 void Board_UART1_Write(
+    const uint8_t *data,
+    uint16_t length
+);
+void Board_UART2_Write(
     const uint8_t *data,
     uint16_t length
 );

@@ -1,6 +1,5 @@
 #include "board.h"
 
-UART_HandleTypeDef huart2;
 
 static void LED_Init(void);
 static void UART1_Init(void);
@@ -45,6 +44,24 @@ void Board_UART1_Write(
     }
 
     while (!(USART1->SR & USART_SR_TC))
+    {
+    }
+}
+void Board_UART2_Write(
+    const uint8_t *data,
+    uint16_t length
+)
+{
+    for (uint16_t i = 0; i < length; i++)
+    {
+        while (!(USART2->SR & USART_SR_TXE))
+        {
+        }
+
+        USART2->DR = data[i];
+    }
+
+    while (!(USART2->SR & USART_SR_TC))
     {
     }
 }
@@ -112,52 +129,63 @@ static void UART1_Init(void)
 }
 static void UART2_Init(void)
 {
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_USART2_CLK_ENABLE();
+    RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+    RCC->APB1ENR |= RCC_APB1ENR_USART2EN;  //b1 for usart2
 
-    GPIO_InitTypeDef gpio = {0};
-
-    gpio.Pin =
-        GPIO_PIN_2 |
-        GPIO_PIN_3;
-
-    gpio.Mode =
-        GPIO_MODE_AF_PP;
-
-    gpio.Pull =
-        GPIO_NOPULL;
-
-    gpio.Speed =
-        GPIO_SPEED_FREQ_VERY_HIGH;
-
-    gpio.Alternate =
-        GPIO_AF7_USART2;
-
-    HAL_GPIO_Init(
-        GPIOA,
-        &gpio
+    GPIOA->MODER &= ~(
+        (3U << (2 * 2)) |    //reset pa2,3
+        (3U << (3 * 2))
     );
 
-    huart2.Instance = USART2;
-    huart2.Init.BaudRate = 115200;
-    huart2.Init.WordLength = UART_WORDLENGTH_8B;
-    huart2.Init.StopBits = UART_STOPBITS_1;
-    huart2.Init.Parity = UART_PARITY_NONE;
-    huart2.Init.Mode = UART_MODE_TX_RX;
-    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-
-    HAL_UART_Init(
-        &huart2
+    GPIOA->MODER |= (    //set pa2,3 to alt mode
+        (2U << (2 * 2)) |
+        (2U << (3 * 2))
     );
 
-    HAL_NVIC_SetPriority(
+    GPIOA->OTYPER &= ~(   //reset pa 3,2 to push-pull
+        (1U << 2) |
+        (1U << 3)
+    );
+
+    GPIOA->PUPDR &= ~(   //reset pa2,3 to no pull-up/down
+        (3U << (2 * 2)) |
+        (3U << (3 * 2))
+    );
+
+    GPIOA->OSPEEDR |= (   //set pa2,3 to high peed
+        (2U << (2 * 2)) |
+        (2U << (3 * 2))
+    );
+
+    GPIOA->AFR[0] &= ~(  //reset pa2,3 
+        (0xFU << 8) |
+        (0xFU << 12)
+    );
+
+    GPIOA->AFR[0] |= (  //set pa2,3 for alt7
+        (7U << 8) |
+        (7U << 12)
+    );
+
+    USART2->CR1 = 0;
+    USART2->CR2 = 0;
+    USART2->CR3 = 0;
+
+    USART2->BRR = 0x008B;
+
+    USART2->CR1 |=
+        USART_CR1_TE |
+        USART_CR1_RE;
+
+    USART2->CR1 |= USART_CR1_UE;   //usart2 enable
+
+
+    NVIC_SetPriority(
         USART2_IRQn,
-        1,
-        0
+        1
     );
 
-    HAL_NVIC_EnableIRQ(
+    NVIC_EnableIRQ(
         USART2_IRQn
     );
-}
+}       
