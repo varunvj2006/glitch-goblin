@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "stm32f4xx.h"
+#include "drivers/clock.h"
 
 typedef enum
 {

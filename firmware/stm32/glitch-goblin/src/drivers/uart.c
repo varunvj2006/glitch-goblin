@@ -1,4 +1,6 @@
 #include "drivers/uart.h"
+#include "drivers/clock.h"
+
 
 static USART_TypeDef *UART_GetPeripheral(
     UART_Port port
@@ -11,6 +13,7 @@ static USART_TypeDef *UART_GetPeripheral(
 
     return USART2;
 }
+
 
 void UART_Write(
     UART_Port port,
@@ -34,6 +37,8 @@ void UART_Write(
     {
     }
 }
+
+
 uint8_t UART_ReadByte(
     UART_Port port
 )
@@ -43,6 +48,8 @@ uint8_t UART_ReadByte(
 
     return (uint8_t)uart->DR;
 }
+
+
 void UART_EnableRxInterrupt(
     UART_Port port
 )
@@ -53,15 +60,28 @@ void UART_EnableRxInterrupt(
     uart->CR1 |= USART_CR1_RXNEIE;
 }
 
+
 void UART_Init(
     UART_Port port,
     uint32_t baud_rate
 )
 {
+    USART_TypeDef *uart =
+        UART_GetPeripheral(port);
+
+    uint32_t peripheral_clock;
+
+
     if (port == UART_PORT_1)
     {
-        RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
-        RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+        RCC->AHB1ENR |=
+            RCC_AHB1ENR_GPIOAEN;
+
+        RCC->APB2ENR |=
+            RCC_APB2ENR_USART1EN;
+
+        peripheral_clock =
+            Clock_GetAPB2Hz();
 
         GPIOA->MODER &= ~(
             (3U << (9 * 2)) |
@@ -71,6 +91,16 @@ void UART_Init(
         GPIOA->MODER |= (
             (2U << (9 * 2)) |
             (2U << (10 * 2))
+        );
+
+        GPIOA->OTYPER &= ~(
+            (1U << 9) |
+            (1U << 10)
+        );
+
+        GPIOA->PUPDR &= ~(
+            (3U << (9 * 2)) |
+            (3U << (10 * 2))
         );
 
         GPIOA->AFR[1] &= ~(
@@ -83,18 +113,6 @@ void UART_Init(
             (7U << 8)
         );
 
-        USART1->CR1 = 0;
-        USART1->CR2 = 0;
-        USART1->CR3 = 0;
-
-        USART1->BRR =
-            SystemCoreClock / baud_rate;
-
-        USART1->CR1 |=
-            USART_CR1_TE |
-            USART_CR1_RE |
-            USART_CR1_UE;
-
         NVIC_SetPriority(
             USART1_IRQn,
             1
@@ -105,10 +123,16 @@ void UART_Init(
         );
     }
 
-    else if (port == UART_PORT_2)
+    else
     {
-        RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
-        RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
+        RCC->AHB1ENR |=
+            RCC_AHB1ENR_GPIOAEN;
+
+        RCC->APB1ENR |=
+            RCC_APB1ENR_USART2EN;
+
+        peripheral_clock =
+            Clock_GetAPB1Hz();
 
         GPIOA->MODER &= ~(
             (3U << (2 * 2)) |
@@ -118,6 +142,16 @@ void UART_Init(
         GPIOA->MODER |= (
             (2U << (2 * 2)) |
             (2U << (3 * 2))
+        );
+
+        GPIOA->OTYPER &= ~(
+            (1U << 2) |
+            (1U << 3)
+        );
+
+        GPIOA->PUPDR &= ~(
+            (3U << (2 * 2)) |
+            (3U << (3 * 2))
         );
 
         GPIOA->AFR[0] &= ~(
@@ -130,18 +164,6 @@ void UART_Init(
             (7U << 12)
         );
 
-        USART2->CR1 = 0;
-        USART2->CR2 = 0;
-        USART2->CR3 = 0;
-
-        USART2->BRR =
-            SystemCoreClock / baud_rate;
-
-        USART2->CR1 |=
-            USART_CR1_TE |
-            USART_CR1_RE |
-            USART_CR1_UE;
-
         NVIC_SetPriority(
             USART2_IRQn,
             1
@@ -151,4 +173,21 @@ void UART_Init(
             USART2_IRQn
         );
     }
+
+
+    uart->CR1 = 0;
+    uart->CR2 = 0;
+    uart->CR3 = 0;
+
+    uart->BRR =
+        (peripheral_clock +
+         (baud_rate / 2U)) /
+        baud_rate;
+
+    uart->CR1 |=
+        USART_CR1_TE |
+        USART_CR1_RE;
+
+    uart->CR1 |=
+        USART_CR1_UE;
 }
