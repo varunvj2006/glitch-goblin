@@ -6,6 +6,9 @@ HardwareSerial SerumUART(2);
 SerumParser serum_parser;
 uint16_t next_sequence = 1;
 
+uint8_t retry_max_attempts = 3;
+uint32_t retry_timeout_ms = 500;
+
 typedef enum
 {
     FAULT_NONE,
@@ -316,6 +319,119 @@ void RunFaultTest(
     }
 }
 
+bool SendReliablePacket(
+    const SerumPacket *packet,
+    uint8_t max_attempts,
+    uint32_t timeout_ms
+)
+{
+    uint8_t tx_buffer[
+        SERUM_HEADER_SIZE +
+        SERUM_MAX_PAYLOAD_SIZE +
+        SERUM_CRC_SIZE
+    ];
+
+    uint16_t tx_length =
+        Serum_EncodePacket(
+            packet,
+            tx_buffer,
+            sizeof(tx_buffer)
+        );
+
+    if (tx_length == 0)
+    {
+        Serial.println(
+            "Packet encoding failed"
+        );
+
+        return false;
+    }
+
+    for (
+        uint8_t attempt = 1;
+        attempt <= max_attempts;
+        attempt++
+    )
+    {
+        Serial.print("TX #");
+        Serial.print(packet->sequence);
+        Serial.print(" attempt ");
+        Serial.println(attempt);
+
+        SerumUART.write(
+            tx_buffer,
+            tx_length
+        );
+
+        if (
+            WaitForAck(
+                packet->sequence,
+                timeout_ms
+            )
+        )
+        {
+            Serial.print("ACK #");
+            Serial.print(packet->sequence);
+            Serial.println(" received");
+
+            Serial.print(
+                "Delivered after "
+            );
+
+            Serial.print(attempt);
+            Serial.println(
+                " attempt(s)"
+            );
+
+            return true;
+        }
+
+        Serial.println(
+            "ACK timeout"
+        );
+    }
+
+    Serial.print("Packet #");
+    Serial.print(packet->sequence);
+    Serial.println(
+        " delivery failed"
+    );
+
+    return false;
+}
+
+void RunReliablePing(void)
+{
+    SerumPacket packet = {0};
+
+    packet.version =
+        SERUM_VERSION;
+
+    packet.type =
+        SERUM_MSG_PING;
+
+    packet.length = 0;
+
+    packet.sequence =
+        next_sequence++;
+
+    bool success =
+        SendReliablePacket(
+            &packet,
+            retry_max_attempts,
+            retry_timeout_ms
+        );  
+
+    if (success)
+    {
+        Serial.println("PASS");
+    }
+    else
+    {
+        Serial.println("FAIL");
+    }
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -344,9 +460,9 @@ void setup()
     Serial.println("duplicate");
     Serial.println("delay");
     Serial.println("stats");
+    Serial.println("reliable");
     Serial.println();
 }
-
 
 void loop()
 {
@@ -431,6 +547,24 @@ void loop()
                 "Telemetry timeout"
             );
         }
+    }
+
+    else if (command == "reliable")
+    {
+        RunReliablePing();
+    }
+
+    else if (command == "help")
+    {
+        Serial.println();
+        Serial.println("Commands:");
+        Serial.println("normal");
+        Serial.println("crc");
+        Serial.println("drop");
+        Serial.println("duplicate");
+        Serial.println("delay");
+        Serial.println("stats");
+        Serial.println("reliable");
     }
 
     else

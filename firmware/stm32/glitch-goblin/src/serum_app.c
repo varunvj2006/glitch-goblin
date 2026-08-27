@@ -7,7 +7,6 @@
 #include <string.h>
 
 
-
 static RingBuffer esp32_rx_buffer;
 static RingBuffer pc_rx_buffer;
 
@@ -210,9 +209,9 @@ static void ProcessEsp32Serum(void)
             }
 
             SendSerumAck(
-                SERUM_LINK_ESP32,
-                sequence
-            );
+        SERUM_LINK_ESP32,
+        sequence
+    );
         }
 
         else if (
