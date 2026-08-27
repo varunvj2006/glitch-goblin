@@ -6,6 +6,15 @@ HardwareSerial SerumUART(2);
 SerumParser serum_parser;
 uint16_t next_sequence = 1;
 
+uint32_t rtt_min_us = UINT32_MAX;
+uint32_t rtt_max_us = 0;
+uint64_t rtt_total_us = 0;
+
+uint32_t successful_deliveries = 0;
+uint32_t failed_deliveries = 0;
+uint32_t total_retries = 0;
+uint32_t total_timeouts = 0;
+
 uint8_t retry_max_attempts = 3;
 uint32_t retry_timeout_ms = 500;
 
@@ -16,8 +25,60 @@ typedef enum
     FAULT_DROP,
     FAULT_DUPLICATE,
     FAULT_DELAY
-
 } FaultMode;
+
+
+void ResetLinkStats(void)
+{
+    rtt_min_us = UINT32_MAX;
+    rtt_max_us = 0;
+    rtt_total_us = 0;
+
+    successful_deliveries = 0;
+    failed_deliveries = 0;
+    total_retries = 0;
+    total_timeouts = 0;
+}
+
+
+void PrintLinkStats(void)
+{
+    Serial.println();
+    Serial.println("=== SERUM LINK STATS ===");
+
+    Serial.print("Successful:  ");
+    Serial.println(successful_deliveries);
+
+    Serial.print("Failed:      ");
+    Serial.println(failed_deliveries);
+
+    Serial.print("Retries:     ");
+    Serial.println(total_retries);
+
+    Serial.print("Timeouts:    ");
+    Serial.println(total_timeouts);
+
+    if (successful_deliveries > 0)
+    {
+        uint32_t average_rtt =
+            rtt_total_us /
+            successful_deliveries;
+
+        Serial.print("Min RTT:     ");
+        Serial.print(rtt_min_us);
+        Serial.println(" us");
+
+        Serial.print("Max RTT:     ");
+        Serial.print(rtt_max_us);
+        Serial.println(" us");
+
+        Serial.print("Average RTT: ");
+        Serial.print(average_rtt);
+        Serial.println(" us");
+    }
+
+    Serial.println("========================");
+}
 
 
 bool WaitForAck(
@@ -284,9 +345,13 @@ void SendStatsRequest(
         );
 
         Serial.println();
-        Serial.println("Requesting STM32 statistics...");
+        Serial.println(
+            "Requesting STM32 statistics..."
+        );
     }
 }
+
+
 void RunFaultTest(
     FaultMode fault,
     bool expect_ack
@@ -319,6 +384,7 @@ void RunFaultTest(
     }
 }
 
+
 bool SendReliablePacket(
     const SerumPacket *packet,
     uint8_t max_attempts,
@@ -344,6 +410,8 @@ bool SendReliablePacket(
             "Packet encoding failed"
         );
 
+        failed_deliveries++;
+
         return false;
     }
 
@@ -353,10 +421,18 @@ bool SendReliablePacket(
         attempt++
     )
     {
+        if (attempt > 1)
+        {
+            total_retries++;
+        }
+
         Serial.print("TX #");
         Serial.print(packet->sequence);
         Serial.print(" attempt ");
         Serial.println(attempt);
+
+        uint32_t start_us =
+            micros();
 
         SerumUART.write(
             tx_buffer,
@@ -370,15 +446,37 @@ bool SendReliablePacket(
             )
         )
         {
+            uint32_t rtt_us =
+                micros() - start_us;
+
+            successful_deliveries++;
+
+            rtt_total_us += rtt_us;
+
+            if (rtt_us < rtt_min_us)
+            {
+                rtt_min_us = rtt_us;
+            }
+
+            if (rtt_us > rtt_max_us)
+            {
+                rtt_max_us = rtt_us;
+            }
+
             Serial.print("ACK #");
             Serial.print(packet->sequence);
             Serial.println(" received");
+
+            Serial.print("RTT: ");
+            Serial.print(rtt_us);
+            Serial.println(" us");
 
             Serial.print(
                 "Delivered after "
             );
 
             Serial.print(attempt);
+
             Serial.println(
                 " attempt(s)"
             );
@@ -386,10 +484,14 @@ bool SendReliablePacket(
             return true;
         }
 
+        total_timeouts++;
+
         Serial.println(
             "ACK timeout"
         );
     }
+
+    failed_deliveries++;
 
     Serial.print("Packet #");
     Serial.print(packet->sequence);
@@ -399,6 +501,7 @@ bool SendReliablePacket(
 
     return false;
 }
+
 
 void RunReliablePing(void)
 {
@@ -420,7 +523,7 @@ void RunReliablePing(void)
             &packet,
             retry_max_attempts,
             retry_timeout_ms
-        );  
+        );
 
     if (success)
     {
@@ -431,6 +534,65 @@ void RunReliablePing(void)
         Serial.println("FAIL");
     }
 }
+
+
+void RunBenchmark(void)
+{
+    const uint16_t packet_count = 20;
+
+    ResetLinkStats();
+
+    Serial.println();
+    Serial.println(
+        "=== SERUM BENCHMARK ==="
+    );
+
+    Serial.print(
+        "Packets: "
+    );
+
+    Serial.println(
+        packet_count
+    );
+
+    Serial.println();
+
+    for (
+        uint16_t i = 0;
+        i < packet_count;
+        i++
+    )
+    {
+        SerumPacket packet = {0};
+
+        packet.version =
+            SERUM_VERSION;
+
+        packet.type =
+            SERUM_MSG_PING;
+
+        packet.length = 0;
+
+        packet.sequence =
+            next_sequence++;
+
+        SendReliablePacket(
+            &packet,
+            retry_max_attempts,
+            retry_timeout_ms
+        );
+
+        delay(10);
+    }
+
+    Serial.println();
+    Serial.println(
+        "Benchmark complete."
+    );
+
+    PrintLinkStats();
+}
+
 
 void setup()
 {
@@ -452,7 +614,10 @@ void setup()
     delay(1000);
 
     Serial.println();
-    Serial.println("=== GLITCH GOBLIN ===");
+    Serial.println(
+        "=== GLITCH GOBLIN ==="
+    );
+
     Serial.println("Commands:");
     Serial.println("normal");
     Serial.println("crc");
@@ -461,8 +626,11 @@ void setup()
     Serial.println("delay");
     Serial.println("stats");
     Serial.println("reliable");
+    Serial.println("bench");
+    Serial.println("help");
     Serial.println();
 }
+
 
 void loop()
 {
@@ -526,10 +694,12 @@ void loop()
             sequence
         );
 
-        if (!WaitForAck(
+        if (
+            !WaitForAck(
                 sequence,
                 500
-            ))
+            )
+        )
         {
             Serial.println(
                 "Stats ACK failed"
@@ -538,10 +708,12 @@ void loop()
             return;
         }
 
-        if (!WaitForTelemetry(
+        if (
+            !WaitForTelemetry(
                 sequence,
                 1000
-            ))
+            )
+        )
         {
             Serial.println(
                 "Telemetry timeout"
@@ -552,6 +724,11 @@ void loop()
     else if (command == "reliable")
     {
         RunReliablePing();
+    }
+
+    else if (command == "bench")
+    {
+        RunBenchmark();
     }
 
     else if (command == "help")
@@ -565,6 +742,8 @@ void loop()
         Serial.println("delay");
         Serial.println("stats");
         Serial.println("reliable");
+        Serial.println("bench");
+        Serial.println("help");
     }
 
     else
