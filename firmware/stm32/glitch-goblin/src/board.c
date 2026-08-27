@@ -1,4 +1,5 @@
 #include "board.h"
+#include "drivers/uart.h"
 
 
 static void LED_Init(void);
@@ -34,36 +35,22 @@ void Board_UART1_Write(
     uint16_t length
 )
 {
-    for (uint16_t i = 0; i < length; i++)
-    {
-        while (!(USART1->SR & USART_SR_TXE))
-        {
-        }
-
-        USART1->DR = data[i];
-    }
-
-    while (!(USART1->SR & USART_SR_TC))
-    {
-    }
+    UART_Write(
+        UART_PORT_1,
+        data,
+        length
+    );
 }
 void Board_UART2_Write(
     const uint8_t *data,
     uint16_t length
 )
 {
-    for (uint16_t i = 0; i < length; i++)
-    {
-        while (!(USART2->SR & USART_SR_TXE))
-        {
-        }
-
-        USART2->DR = data[i];
-    }
-
-    while (!(USART2->SR & USART_SR_TC))
-    {
-    }
+    UART_Write(
+        UART_PORT_2,
+        data,
+        length
+    );
 }
 static void UART1_Init(void)
 {
