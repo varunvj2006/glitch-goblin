@@ -1,11 +1,11 @@
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 #include "board.h"
 #include "serum_app.h"
 #include "timebase.h"
 
 int main(void)
 {
-    HAL_Init();
+    NVIC_SetPriorityGrouping(0);
 
     Board_Init();
     Timebase_Init();
