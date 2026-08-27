@@ -11,11 +11,7 @@ static SerumParser serum_parser;
 static uint16_t next_sequence =
     1;
 
-static uint8_t retry_max_attempts =
-    3;
 
-static uint32_t retry_timeout_ms =
-    500;
 
 static uint32_t ReadU32BE(
     const uint8_t *buffer
@@ -59,17 +55,9 @@ uint16_t SerumLink_NextSequence(void)
         next_sequence++;
 }
 
-uint8_t SerumLink_GetRetryMaxAttempts(void)
-{
-    return
-        retry_max_attempts;
-}
 
-uint32_t SerumLink_GetRetryTimeoutMs(void)
-{
-    return
-        retry_timeout_ms;
-}
+
+
 
 bool SerumLink_WaitForAck(
     uint16_t sequence,

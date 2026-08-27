@@ -4,6 +4,7 @@
 #include "fault_engine.h"
 #include "serum.h"
 #include "serum_link.h"
+#include "config.h"
 
 void FaultEngine_Init(void)
 {
@@ -14,25 +15,37 @@ void FaultEngine_Init(void)
 
 FaultMode FaultEngine_GetRandomFault(void)
 {
-    long roll =
+    uint32_t roll =
         random(0, 100);
 
-    if (roll < 70)
+    uint32_t threshold =
+        Config_GetNormalRate();
+
+    if (roll < threshold)
     {
         return FAULT_NONE;
     }
 
-    if (roll < 80)
+    threshold +=
+        Config_GetCrcRate();
+
+    if (roll < threshold)
     {
         return FAULT_BAD_CRC;
     }
 
-    if (roll < 90)
+    threshold +=
+        Config_GetDropRate();
+
+    if (roll < threshold)
     {
         return FAULT_DROP;
     }
 
-    if (roll < 95)
+    threshold +=
+        Config_GetDuplicateRate();
+
+    if (roll < threshold)
     {
         return FAULT_DUPLICATE;
     }

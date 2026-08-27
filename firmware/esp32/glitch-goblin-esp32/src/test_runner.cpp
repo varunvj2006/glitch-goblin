@@ -4,6 +4,8 @@
 #include "serum.h"
 #include "serum_link.h"
 #include "stats.h"
+#include "config.h"
+
 
 static void PrintChaosVerdict(void)
 {
@@ -85,7 +87,7 @@ void TestRunner_RunFault(
     bool ack =
         SerumLink_WaitForAck(
             sequence,
-            500
+            Config_GetAckTimeoutMs()
         );
 
     bool passed =
@@ -163,8 +165,8 @@ void TestRunner_RunReliablePing(void)
     bool success =
         SerumLink_SendReliablePacket(
             &packet,
-            SerumLink_GetRetryMaxAttempts(),
-            SerumLink_GetRetryTimeoutMs()
+            Config_GetRetryAttempts(),
+            Config_GetAckTimeoutMs()
         );
 
     if (success)
@@ -183,8 +185,7 @@ void TestRunner_RunReliablePing(void)
 
 void TestRunner_RunBenchmark(void)
 {
-    const uint16_t packet_count =
-        20;
+    const uint16_t packet_count = Config_GetBenchmarkPackets();
 
     Stats_ResetLink();
 
@@ -226,8 +227,8 @@ void TestRunner_RunBenchmark(void)
 
         SerumLink_SendReliablePacket(
             &packet,
-            SerumLink_GetRetryMaxAttempts(),
-            SerumLink_GetRetryTimeoutMs()
+            Config_GetRetryAttempts(),
+            Config_GetAckTimeoutMs()
         );
 
         delay(10);
@@ -244,8 +245,7 @@ void TestRunner_RunBenchmark(void)
 
 void TestRunner_RunChaos(void)
 {
-    const uint16_t packet_count =
-        100;
+    uint16_t packet_count = Config_GetChaosPackets();
 
     Stats_ResetLink();
     Stats_ResetChaos();
@@ -268,25 +268,35 @@ void TestRunner_RunChaos(void)
         "Fault probabilities:"
     );
 
-    Serial.println(
-        "Normal:    70%"
+    Serial.print("Normal:    ");
+    Serial.print(
+        Config_GetNormalRate()
     );
+    Serial.println("%");
 
-    Serial.println(
-        "Bad CRC:   10%"
+    Serial.print("Bad CRC:   ");
+    Serial.print(
+        Config_GetCrcRate()
     );
+    Serial.println("%");
 
-    Serial.println(
-        "Drop:      10%"
+    Serial.print("Drop:      ");
+    Serial.print(
+        Config_GetDropRate()
     );
+    Serial.println("%");
 
-    Serial.println(
-        "Duplicate: 5%"
+    Serial.print("Duplicate: ");
+    Serial.print(
+        Config_GetDuplicateRate()
     );
+    Serial.println("%");
 
-    Serial.println(
-        "Delay:     5%"
+    Serial.print("Delay:     ");
+    Serial.print(
+        Config_GetDelayRate()
     );
+    Serial.println("%");
 
     Serial.println();
 
@@ -312,8 +322,8 @@ void TestRunner_RunChaos(void)
 
         SerumLink_SendReliableChaosPacket(
             &packet,
-            SerumLink_GetRetryMaxAttempts(),
-            SerumLink_GetRetryTimeoutMs()
+            Config_GetRetryAttempts(),
+            Config_GetAckTimeoutMs()
         );
 
         delay(10);

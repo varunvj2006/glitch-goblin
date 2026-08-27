@@ -15,9 +15,7 @@ void SerumLink_WriteRaw(
 
 uint16_t SerumLink_NextSequence(void);
 
-uint8_t SerumLink_GetRetryMaxAttempts(void);
 
-uint32_t SerumLink_GetRetryTimeoutMs(void);
 
 bool SerumLink_WaitForAck(
     uint16_t sequence,

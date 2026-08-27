@@ -3,6 +3,7 @@
 #include "serum_link.h"
 #include "fault_engine.h"
 #include "console.h"
+#include "config.h"
 
 void setup()
 {
