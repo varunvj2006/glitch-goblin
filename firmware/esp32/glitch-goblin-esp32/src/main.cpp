@@ -1,9 +1,11 @@
 #include <Arduino.h>
+#include <string.h>
 #include "serum.h"
 
 HardwareSerial SerumUART(2);
 
 SerumParser serum_parser;
+
 uint16_t next_sequence = 1;
 
 uint32_t rtt_min_us = UINT32_MAX;
@@ -15,8 +17,15 @@ uint32_t failed_deliveries = 0;
 uint32_t total_retries = 0;
 uint32_t total_timeouts = 0;
 
+uint32_t chaos_normal = 0;
+uint32_t chaos_crc = 0;
+uint32_t chaos_drop = 0;
+uint32_t chaos_duplicate = 0;
+uint32_t chaos_delay = 0;
+
 uint8_t retry_max_attempts = 3;
 uint32_t retry_timeout_ms = 500;
+
 
 typedef enum
 {
@@ -26,6 +35,16 @@ typedef enum
     FAULT_DUPLICATE,
     FAULT_DELAY
 } FaultMode;
+
+
+void ResetChaosStats(void)
+{
+    chaos_normal = 0;
+    chaos_crc = 0;
+    chaos_drop = 0;
+    chaos_duplicate = 0;
+    chaos_delay = 0;
+}
 
 
 void ResetLinkStats(void)
@@ -58,11 +77,29 @@ void PrintLinkStats(void)
     Serial.print("Timeouts:    ");
     Serial.println(total_timeouts);
 
+    uint32_t total_transactions =
+        successful_deliveries +
+        failed_deliveries;
+
+    if (total_transactions > 0)
+    {
+        float delivery_rate =
+            ((float)successful_deliveries /
+             (float)total_transactions) *
+            100.0f;
+
+        Serial.print("Delivery:    ");
+        Serial.print(delivery_rate, 2);
+        Serial.println("%");
+    }
+
     if (successful_deliveries > 0)
     {
         uint32_t average_rtt =
-            rtt_total_us /
-            successful_deliveries;
+            (uint32_t)(
+                rtt_total_us /
+                successful_deliveries
+            );
 
         Serial.print("Min RTT:     ");
         Serial.print(rtt_min_us);
@@ -81,16 +118,56 @@ void PrintLinkStats(void)
 }
 
 
+void PrintChaosStats(void)
+{
+    Serial.println();
+    Serial.println("=== FAULT INJECTION STATS ===");
+
+    Serial.print("Normal:      ");
+    Serial.println(chaos_normal);
+
+    Serial.print("CRC faults:  ");
+    Serial.println(chaos_crc);
+
+    Serial.print("Drops:       ");
+    Serial.println(chaos_drop);
+
+    Serial.print("Duplicates:  ");
+    Serial.println(chaos_duplicate);
+
+    Serial.print("Delays:      ");
+    Serial.println(chaos_delay);
+
+    uint32_t total_attempts =
+        chaos_normal +
+        chaos_crc +
+        chaos_drop +
+        chaos_duplicate +
+        chaos_delay;
+
+    Serial.print("TX attempts: ");
+    Serial.println(total_attempts);
+
+    Serial.println("=============================");
+}
+
+
 bool WaitForAck(
     uint16_t sequence,
     uint32_t timeout_ms
 )
 {
-    uint32_t start = millis();
+    uint32_t start =
+        millis();
 
-    while (millis() - start < timeout_ms)
+    while (
+        millis() - start <
+        timeout_ms
+    )
     {
-        while (SerumUART.available())
+        while (
+            SerumUART.available()
+        )
         {
             uint8_t byte =
                 SerumUART.read();
@@ -142,11 +219,17 @@ bool WaitForTelemetry(
     uint32_t timeout_ms
 )
 {
-    uint32_t start = millis();
+    uint32_t start =
+        millis();
 
-    while (millis() - start < timeout_ms)
+    while (
+        millis() - start <
+        timeout_ms
+    )
     {
-        while (SerumUART.available())
+        while (
+            SerumUART.available()
+        )
         {
             uint8_t byte =
                 SerumUART.read();
@@ -191,21 +274,41 @@ bool WaitForTelemetry(
                         );
 
                     Serial.println();
-                    Serial.println("=== STM32 TELEMETRY ===");
+                    Serial.println(
+                        "=== STM32 TELEMETRY ==="
+                    );
 
-                    Serial.print("Valid packets:     ");
-                    Serial.println(valid_packets);
+                    Serial.print(
+                        "Valid packets:     "
+                    );
+                    Serial.println(
+                        valid_packets
+                    );
 
-                    Serial.print("CRC errors:        ");
-                    Serial.println(crc_errors);
+                    Serial.print(
+                        "CRC errors:        "
+                    );
+                    Serial.println(
+                        crc_errors
+                    );
 
-                    Serial.print("Duplicates:        ");
-                    Serial.println(duplicates);
+                    Serial.print(
+                        "Duplicates:        "
+                    );
+                    Serial.println(
+                        duplicates
+                    );
 
-                    Serial.print("Processed packets: ");
-                    Serial.println(processed_packets);
+                    Serial.print(
+                        "Processed packets: "
+                    );
+                    Serial.println(
+                        processed_packets
+                    );
 
-                    Serial.println("=======================");
+                    Serial.println(
+                        "======================="
+                    );
 
                     return true;
                 }
@@ -226,10 +329,16 @@ void SendSerumPing(
 {
     SerumPacket ping = {0};
 
-    ping.version = SERUM_VERSION;
-    ping.type = SERUM_MSG_PING;
+    ping.version =
+        SERUM_VERSION;
+
+    ping.type =
+        SERUM_MSG_PING;
+
     ping.length = 0;
-    ping.sequence = sequence;
+
+    ping.sequence =
+        sequence;
 
     uint8_t tx_buffer[
         SERUM_HEADER_SIZE +
@@ -246,17 +355,27 @@ void SendSerumPing(
 
     if (tx_length == 0)
     {
-        Serial.println("Packet encoding failed");
+        Serial.println(
+            "Packet encoding failed"
+        );
+
         return;
     }
 
-    if (fault == FAULT_BAD_CRC)
+    if (
+        fault ==
+        FAULT_BAD_CRC
+    )
     {
-        tx_buffer[tx_length - 1] ^= 0x01;
+        tx_buffer[
+            tx_length - 1
+        ] ^= 0x01;
 
         Serial.print("PING #");
         Serial.print(sequence);
-        Serial.println(" sent [BAD CRC]");
+        Serial.println(
+            " sent [BAD CRC]"
+        );
 
         SerumUART.write(
             tx_buffer,
@@ -266,20 +385,30 @@ void SendSerumPing(
         return;
     }
 
-    if (fault == FAULT_DROP)
+    if (
+        fault ==
+        FAULT_DROP
+    )
     {
         Serial.print("PING #");
         Serial.print(sequence);
-        Serial.println(" [DROPPED]");
+        Serial.println(
+            " [DROPPED]"
+        );
 
         return;
     }
 
-    if (fault == FAULT_DELAY)
+    if (
+        fault ==
+        FAULT_DELAY
+    )
     {
         Serial.print("PING #");
         Serial.print(sequence);
-        Serial.println(" [DELAYED]");
+        Serial.println(
+            " [DELAYED]"
+        );
 
         delay(2000);
     }
@@ -292,9 +421,14 @@ void SendSerumPing(
     Serial.print("PING #");
     Serial.print(sequence);
 
-    if (fault == FAULT_DUPLICATE)
+    if (
+        fault ==
+        FAULT_DUPLICATE
+    )
     {
-        Serial.println(" sent [DUPLICATE]");
+        Serial.println(
+            " sent [DUPLICATE]"
+        );
 
         delay(50);
 
@@ -305,7 +439,9 @@ void SendSerumPing(
     }
     else
     {
-        Serial.println(" sent [VALID]");
+        Serial.println(
+            " sent [VALID]"
+        );
     }
 }
 
@@ -316,10 +452,16 @@ void SendStatsRequest(
 {
     SerumPacket packet = {0};
 
-    packet.version = SERUM_VERSION;
-    packet.type = SERUM_MSG_COMMAND;
+    packet.version =
+        SERUM_VERSION;
+
+    packet.type =
+        SERUM_MSG_COMMAND;
+
     packet.length = 1;
-    packet.sequence = sequence;
+
+    packet.sequence =
+        sequence;
 
     packet.payload[0] =
         SERUM_CMD_GET_STATS;
@@ -427,7 +569,9 @@ bool SendReliablePacket(
         }
 
         Serial.print("TX #");
-        Serial.print(packet->sequence);
+        Serial.print(
+            packet->sequence
+        );
         Serial.print(" attempt ");
         Serial.println(attempt);
 
@@ -451,21 +595,34 @@ bool SendReliablePacket(
 
             successful_deliveries++;
 
-            rtt_total_us += rtt_us;
+            rtt_total_us +=
+                rtt_us;
 
-            if (rtt_us < rtt_min_us)
+            if (
+                rtt_us <
+                rtt_min_us
+            )
             {
-                rtt_min_us = rtt_us;
+                rtt_min_us =
+                    rtt_us;
             }
 
-            if (rtt_us > rtt_max_us)
+            if (
+                rtt_us >
+                rtt_max_us
+            )
             {
-                rtt_max_us = rtt_us;
+                rtt_max_us =
+                    rtt_us;
             }
 
             Serial.print("ACK #");
-            Serial.print(packet->sequence);
-            Serial.println(" received");
+            Serial.print(
+                packet->sequence
+            );
+            Serial.println(
+                " received"
+            );
 
             Serial.print("RTT: ");
             Serial.print(rtt_us);
@@ -474,9 +631,7 @@ bool SendReliablePacket(
             Serial.print(
                 "Delivered after "
             );
-
             Serial.print(attempt);
-
             Serial.println(
                 " attempt(s)"
             );
@@ -494,7 +649,9 @@ bool SendReliablePacket(
     failed_deliveries++;
 
     Serial.print("Packet #");
-    Serial.print(packet->sequence);
+    Serial.print(
+        packet->sequence
+    );
     Serial.println(
         " delivery failed"
     );
@@ -538,7 +695,8 @@ void RunReliablePing(void)
 
 void RunBenchmark(void)
 {
-    const uint16_t packet_count = 20;
+    const uint16_t packet_count =
+        20;
 
     ResetLinkStats();
 
@@ -547,13 +705,8 @@ void RunBenchmark(void)
         "=== SERUM BENCHMARK ==="
     );
 
-    Serial.print(
-        "Packets: "
-    );
-
-    Serial.println(
-        packet_count
-    );
+    Serial.print("Packets: ");
+    Serial.println(packet_count);
 
     Serial.println();
 
@@ -594,6 +747,413 @@ void RunBenchmark(void)
 }
 
 
+FaultMode GetRandomChaosFault(void)
+{
+    long roll =
+        random(0, 100);
+
+    if (roll < 70)
+    {
+        return FAULT_NONE;
+    }
+
+    if (roll < 80)
+    {
+        return FAULT_BAD_CRC;
+    }
+
+    if (roll < 90)
+    {
+        return FAULT_DROP;
+    }
+
+    if (roll < 95)
+    {
+        return FAULT_DUPLICATE;
+    }
+
+    return FAULT_DELAY;
+}
+
+
+const char *FaultModeName(
+    FaultMode fault
+)
+{
+    if (fault == FAULT_NONE)
+    {
+        return "NORMAL";
+    }
+
+    if (
+        fault ==
+        FAULT_BAD_CRC
+    )
+    {
+        return "BAD CRC";
+    }
+
+    if (
+        fault ==
+        FAULT_DROP
+    )
+    {
+        return "DROP";
+    }
+
+    if (
+        fault ==
+        FAULT_DUPLICATE
+    )
+    {
+        return "DUPLICATE";
+    }
+
+    if (
+        fault ==
+        FAULT_DELAY
+    )
+    {
+        return "DELAY";
+    }
+
+    return "UNKNOWN";
+}
+
+
+void SendWithFault(
+    const uint8_t *buffer,
+    uint16_t length,
+    FaultMode fault
+)
+{
+    if (length == 0)
+    {
+        return;
+    }
+
+    if (
+        fault ==
+        FAULT_DROP
+    )
+    {
+        chaos_drop++;
+
+        return;
+    }
+
+    if (
+        fault ==
+        FAULT_BAD_CRC
+    )
+    {
+        chaos_crc++;
+
+        uint8_t corrupted[
+            SERUM_HEADER_SIZE +
+            SERUM_MAX_PAYLOAD_SIZE +
+            SERUM_CRC_SIZE
+        ];
+
+        memcpy(
+            corrupted,
+            buffer,
+            length
+        );
+
+        corrupted[
+            length - 1
+        ] ^= 0x01;
+
+        SerumUART.write(
+            corrupted,
+            length
+        );
+
+        return;
+    }
+
+    if (
+        fault ==
+        FAULT_DUPLICATE
+    )
+    {
+        chaos_duplicate++;
+
+        SerumUART.write(
+            buffer,
+            length
+        );
+
+        delay(5);
+
+        SerumUART.write(
+            buffer,
+            length
+        );
+
+        return;
+    }
+
+    if (
+        fault ==
+        FAULT_DELAY
+    )
+    {
+        chaos_delay++;
+
+        delay(
+            random(50, 200)
+        );
+
+        SerumUART.write(
+            buffer,
+            length
+        );
+
+        return;
+    }
+
+    chaos_normal++;
+
+    SerumUART.write(
+        buffer,
+        length
+    );
+}
+
+
+bool SendReliableChaosPacket(
+    const SerumPacket *packet,
+    uint8_t max_attempts,
+    uint32_t timeout_ms
+)
+{
+    uint8_t tx_buffer[
+        SERUM_HEADER_SIZE +
+        SERUM_MAX_PAYLOAD_SIZE +
+        SERUM_CRC_SIZE
+    ];
+
+    uint16_t tx_length =
+        Serum_EncodePacket(
+            packet,
+            tx_buffer,
+            sizeof(tx_buffer)
+        );
+
+    if (tx_length == 0)
+    {
+        failed_deliveries++;
+
+        return false;
+    }
+
+    for (
+        uint8_t attempt = 1;
+        attempt <= max_attempts;
+        attempt++
+    )
+    {
+        if (attempt > 1)
+        {
+            total_retries++;
+        }
+
+        FaultMode fault =
+            GetRandomChaosFault();
+
+        Serial.print("TX #");
+        Serial.print(
+            packet->sequence
+        );
+
+        Serial.print(" attempt ");
+        Serial.print(attempt);
+
+        Serial.print(" [");
+        Serial.print(
+            FaultModeName(
+                fault
+            )
+        );
+        Serial.println("]");
+
+        uint32_t start_us =
+            micros();
+
+        SendWithFault(
+            tx_buffer,
+            tx_length,
+            fault
+        );
+
+        if (
+            WaitForAck(
+                packet->sequence,
+                timeout_ms
+            )
+        )
+        {
+            uint32_t rtt_us =
+                micros() - start_us;
+
+            successful_deliveries++;
+
+            rtt_total_us +=
+                rtt_us;
+
+            if (
+                rtt_us <
+                rtt_min_us
+            )
+            {
+                rtt_min_us =
+                    rtt_us;
+            }
+
+            if (
+                rtt_us >
+                rtt_max_us
+            )
+            {
+                rtt_max_us =
+                    rtt_us;
+            }
+
+            Serial.print("ACK #");
+            Serial.print(
+                packet->sequence
+            );
+            Serial.println(
+                " received"
+            );
+
+            return true;
+        }
+
+        total_timeouts++;
+
+        Serial.println(
+            "ACK timeout"
+        );
+    }
+
+    failed_deliveries++;
+
+    Serial.print("Packet #");
+    Serial.print(
+        packet->sequence
+    );
+    Serial.println(
+        " failed"
+    );
+
+    return false;
+}
+
+
+void RunChaosTest(void)
+{
+    const uint16_t packet_count =
+        100;
+
+    ResetLinkStats();
+    ResetChaosStats();
+
+    Serial.println();
+    Serial.println(
+        "=== GLITCH GOBLIN CHAOS TEST ==="
+    );
+
+    Serial.print(
+        "Transactions: "
+    );
+    Serial.println(
+        packet_count
+    );
+
+    Serial.println(
+        "Fault probabilities:"
+    );
+
+    Serial.println(
+        "Normal:    70%"
+    );
+
+    Serial.println(
+        "Bad CRC:   10%"
+    );
+
+    Serial.println(
+        "Drop:      10%"
+    );
+
+    Serial.println(
+        "Duplicate: 5%"
+    );
+
+    Serial.println(
+        "Delay:     5%"
+    );
+
+    Serial.println();
+
+    for (
+        uint16_t i = 0;
+        i < packet_count;
+        i++
+    )
+    {
+        SerumPacket packet = {0};
+
+        packet.version =
+            SERUM_VERSION;
+
+        packet.type =
+            SERUM_MSG_PING;
+
+        packet.length = 0;
+
+        packet.sequence =
+            next_sequence++;
+
+        SendReliableChaosPacket(
+            &packet,
+            retry_max_attempts,
+            retry_timeout_ms
+        );
+
+        delay(10);
+    }
+
+    Serial.println();
+    Serial.println(
+        "Chaos test complete."
+    );
+
+    PrintChaosStats();
+    PrintLinkStats();
+}
+
+
+void PrintHelp(void)
+{
+    Serial.println();
+    Serial.println("Commands:");
+    Serial.println("normal");
+    Serial.println("crc");
+    Serial.println("drop");
+    Serial.println("duplicate");
+    Serial.println("delay");
+    Serial.println("stats");
+    Serial.println("reliable");
+    Serial.println("bench");
+    Serial.println("chaos");
+    Serial.println("help");
+}
+
+
 void setup()
 {
     Serial.begin(115200);
@@ -611,6 +1171,10 @@ void setup()
 
     Serial.setTimeout(2000);
 
+    randomSeed(
+        micros()
+    );
+
     delay(1000);
 
     Serial.println();
@@ -618,16 +1182,8 @@ void setup()
         "=== GLITCH GOBLIN ==="
     );
 
-    Serial.println("Commands:");
-    Serial.println("normal");
-    Serial.println("crc");
-    Serial.println("drop");
-    Serial.println("duplicate");
-    Serial.println("delay");
-    Serial.println("stats");
-    Serial.println("reliable");
-    Serial.println("bench");
-    Serial.println("help");
+    PrintHelp();
+
     Serial.println();
 }
 
@@ -640,12 +1196,17 @@ void loop()
     }
 
     String command =
-        Serial.readStringUntil('\n');
+        Serial.readStringUntil(
+            '\n'
+        );
 
     command.trim();
     command.toLowerCase();
 
-    if (command == "normal")
+    if (
+        command ==
+        "normal"
+    )
     {
         RunFaultTest(
             FAULT_NONE,
@@ -653,7 +1214,10 @@ void loop()
         );
     }
 
-    else if (command == "crc")
+    else if (
+        command ==
+        "crc"
+    )
     {
         RunFaultTest(
             FAULT_BAD_CRC,
@@ -661,7 +1225,10 @@ void loop()
         );
     }
 
-    else if (command == "drop")
+    else if (
+        command ==
+        "drop"
+    )
     {
         RunFaultTest(
             FAULT_DROP,
@@ -669,7 +1236,10 @@ void loop()
         );
     }
 
-    else if (command == "duplicate")
+    else if (
+        command ==
+        "duplicate"
+    )
     {
         RunFaultTest(
             FAULT_DUPLICATE,
@@ -677,7 +1247,10 @@ void loop()
         );
     }
 
-    else if (command == "delay")
+    else if (
+        command ==
+        "delay"
+    )
     {
         RunFaultTest(
             FAULT_DELAY,
@@ -685,7 +1258,10 @@ void loop()
         );
     }
 
-    else if (command == "stats")
+    else if (
+        command ==
+        "stats"
+    )
     {
         uint16_t sequence =
             next_sequence++;
@@ -721,29 +1297,36 @@ void loop()
         }
     }
 
-    else if (command == "reliable")
+    else if (
+        command ==
+        "reliable"
+    )
     {
         RunReliablePing();
     }
 
-    else if (command == "bench")
+    else if (
+        command ==
+        "bench"
+    )
     {
         RunBenchmark();
     }
 
-    else if (command == "help")
+    else if (
+        command ==
+        "chaos"
+    )
     {
-        Serial.println();
-        Serial.println("Commands:");
-        Serial.println("normal");
-        Serial.println("crc");
-        Serial.println("drop");
-        Serial.println("duplicate");
-        Serial.println("delay");
-        Serial.println("stats");
-        Serial.println("reliable");
-        Serial.println("bench");
-        Serial.println("help");
+        RunChaosTest();
+    }
+
+    else if (
+        command ==
+        "help"
+    )
+    {
+        PrintHelp();
     }
 
     else
