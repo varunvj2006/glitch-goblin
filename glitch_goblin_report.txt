@@ -1,0 +1,1264 @@
+GLITCH GOBLIN V2 TEST REPORT
+================================
+Timestamp: 2026-08-27T20:50:52
+
+Delivery: 98.0%
+Recovery: 90.48%
+Successful: 98
+Failed: 2
+Retries: 27
+Timeouts: 29
+Min RTT: 5092 us
+Average RTT: 10531 us
+Max RTT: 197125 us
+Verdict: PASS
+
+FAULT DISTRIBUTION
+================================
+Normal: 84
+CRC faults: 10
+Drops: 19
+Duplicates: 11
+Delays: 3
+
+SERIAL LOG
+================================
+[BOOT] GLITCH GOBLIN V2
+Attaching target interface...
+Scanning serial transport...
+Loading SERUM protocol stack...  OK
+Initializing fault engine...  OK
+Initializing telemetry parser...  OK
+Arming replay protection monitor...  OK
+Preparing reliability analyzer...  OK
+Loading chaos test controller...  OK
+System ready.
+
+Connecting to target COM8...
+Target link established... SUCCESS
+SERUM transport ready.ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+=== GLITCH GOBLIN ===
+
+Commands:
+normal
+crc
+drop
+duplicate
+delay
+stats
+replay
+reliable
+bench
+bench <1-10000>
+chaos
+chaos <1-10000>
+retries <1-10>
+timeout <50-5000>
+config
+faults <normal> <crc> <drop> <duplicate> <delay>
+help
+
+
+> config
+=== GLITCH GOBLIN CONFIG ===
+Retry attempts:    3
+ACK timeout:       500 ms
+Benchmark packets: 20
+Chaos packets:     100
+
+Fault probabilities:
+Normal:            70%
+CRC:               10%
+Drop:              10%
+Duplicate:         5%
+Delay:             5%
+============================
+
+
+Target link closed.
+Connecting to target COM8...
+Target link established... SUCCESS
+SERUM transport ready.ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:1184
+load:0x40078000,len:13232
+load:0x40080400,len:3028
+entry 0x400805e4
+
+=== GLITCH GOBLIN ===
+
+Commands:
+normal
+crc
+drop
+duplicate
+delay
+stats
+replay
+reliable
+bench
+bench <1-10000>
+chaos
+chaos <1-10000>
+retries <1-10>
+timeout <50-5000>
+config
+faults <normal> <crc> <drop> <duplicate> <delay>
+help
+
+
+> normalPING #1 sent [VALID]
+PASS
+
+
+> normalPING #2 sent [VALID]
+PASS
+
+
+> normalPING #3 sent [VALID]
+PASS
+
+
+> normalPING #4 sent [VALID]
+PASS
+
+
+> normalPING #5 sent [VALID]
+PASS
+
+
+> normalPING #6 sent [VALID]
+PASS
+
+
+> normalPING #7 sent [VALID]
+PASS
+
+
+> normalPING #8 sent [VALID]
+PASS
+
+
+> normalPING #9 sent [VALID]
+PASS
+
+
+> normalPING #10 sent [VALID]
+PASS
+
+
+> normalPING #11 sent [VALID]
+PASS
+
+
+> normalPING #12 sent [VALID]
+PASS
+
+
+> crcPING #13 sent [BAD CRC]
+PASS
+
+
+> crcPING #14 sent [BAD CRC]
+
+> crc
+> crcPASS
+
+PING #15 sent [BAD CRC]
+
+> crc
+> crc
+> crcPASS
+
+PING #16 sent [BAD CRC]
+
+> crc
+> crcPASS
+
+PING #17 sent [BAD CRC]
+PASS
+
+PING #18 sent [BAD CRC]
+
+> duplicatePASS
+
+PING #19 sent [BAD CRC]
+PASS
+
+PING #20 sent [BAD CRC]
+
+> statsPASS
+
+PING #21 sent [BAD CRC]
+PASS
+
+PING #22 sent [DUPLICATE]
+PASS
+
+
+Requesting STM32 statistics...
+
+=== STM32 TELEMETRY ===
+Valid packets:     2415
+CRC errors:        165
+Duplicates:        78
+Processed packets: 2337
+=======================
+
+
+> replay
+=== REPLAY TEST ===
+Original sequence: 24
+PING #24 sent [VALID]
+PING #25 sent [VALID]
+PING #26 sent [VALID]
+PING #27 sent [VALID]
+Replaying old sequence: 24
+PING #24 sent [VALID]
+Replay ACK received
+Check STM32 monitor for DUPLICATE
+
+
+> bench 100Benchmark packets set to 100
+
+=== SERUM BENCHMARK ===
+Packets: 100
+
+TX #28 attempt 1
+ACK #28 received
+RTT: 4907 us
+Delivered after 1 attempt(s)
+TX #29 attempt 1
+ACK #29 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #30 attempt 1
+ACK #30 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #31 attempt 1
+ACK #31 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #32 attempt 1
+ACK #32 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #33 attempt 1
+ACK #33 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #34 attempt 1
+ACK #34 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #35 attempt 1
+ACK #35 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #36 attempt 1
+ACK #36 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #37 attempt 1
+ACK #37 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #38 attempt 1
+ACK #38 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #39 attempt 1
+ACK #39 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #40 attempt 1
+ACK #40 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #41 attempt 1
+ACK #41 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #42 attempt 1
+ACK #42 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #43 attempt 1
+ACK #43 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #44 attempt 1
+ACK #44 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #45 attempt 1
+ACK #45 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #46 attempt 1
+ACK #46 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #47 attempt 1
+ACK #47 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #48 attempt 1
+ACK #48 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #49 attempt 1
+ACK #49 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #50 attempt 1
+ACK #50 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #51 attempt 1
+ACK #51 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #52 attempt 1
+ACK #52 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #53 attempt 1
+ACK #53 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #54 attempt 1
+ACK #54 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #55 attempt 1
+ACK #55 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #56 attempt 1
+ACK #56 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #57 attempt 1
+ACK #57 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #58 attempt 1
+ACK #58 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #59 attempt 1
+ACK #59 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #60 attempt 1
+ACK #60 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #61 attempt 1
+ACK #61 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #62 attempt 1
+ACK #62 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #63 attempt 1
+ACK #63 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #64 attempt 1
+ACK #64 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #65 attempt 1
+ACK #65 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #66 attempt 1
+ACK #66 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #67 attempt 1
+ACK #67 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #68 attempt 1
+ACK #68 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #69 attempt 1
+ACK #69 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #70 attempt 1
+ACK #70 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #71 attempt 1
+ACK #71 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #72 attempt 1
+ACK #72 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #73 attempt 1
+ACK #73 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #74 attempt 1
+ACK #74 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #75 attempt 1
+ACK #75 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #76 attempt 1
+ACK #76 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #77 attempt 1
+ACK #77 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #78 attempt 1
+ACK #78 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #79 attempt 1
+ACK #79 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #80 attempt 1
+ACK #80 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #81 attempt 1
+ACK #81 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #82 attempt 1
+ACK #82 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #83 attempt 1
+ACK #83 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #84 attempt 1
+ACK #84 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #85 attempt 1
+ACK #85 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #86 attempt 1
+ACK #86 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #87 attempt 1
+ACK #87 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #88 attempt 1
+ACK #88 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #89 attempt 1
+ACK #89 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #90 attempt 1
+ACK #90 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #91 attempt 1
+ACK #91 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #92 attempt 1
+ACK #92 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #93 attempt 1
+ACK #93 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #94 attempt 1
+ACK #94 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #95 attempt 1
+ACK #95 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #96 attempt 1
+ACK #96 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #97 attempt 1
+ACK #97 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #98 attempt 1
+ACK #98 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #99 attempt 1
+ACK #99 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #100 attempt 1
+ACK #100 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #101 attempt 1
+ACK #101 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #102 attempt 1
+ACK #102 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #103 attempt 1
+ACK #103 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #104 attempt 1
+ACK #104 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #105 attempt 1
+ACK #105 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #106 attempt 1
+ACK #106 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #107 attempt 1
+ACK #107 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #108 attempt 1
+ACK #108 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #109 attempt 1
+ACK #109 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #110 attempt 1
+ACK #110 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #111 attempt 1
+ACK #111 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #112 attempt 1
+ACK #112 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #113 attempt 1
+ACK #113 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #114 attempt 1
+ACK #114 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #115 attempt 1
+ACK #115 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #116 attempt 1
+ACK #116 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #117 attempt 1
+ACK #117 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #118 attempt 1
+ACK #118 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #119 attempt 1
+ACK #119 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #120 attempt 1
+ACK #120 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #121 attempt 1
+ACK #121 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #122 attempt 1
+ACK #122 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #123 attempt 1
+ACK #123 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #124 attempt 1
+ACK #124 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #125 attempt 1
+ACK #125 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #126 attempt 1
+ACK #126 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+TX #127 attempt 1
+ACK #127 received
+RTT: 5178 us
+Delivered after 1 attempt(s)
+
+Benchmark complete.
+
+=== SERUM LINK STATS ===
+Successful:             100
+Failed:                 0
+
+First-attempt success:  100
+Recovered by retry:     0
+Retries:                0
+Timeouts:               0
+Delivery:               100.00%
+Recovery rate:          100.00%
+Min RTT:               4907 us
+Max RTT:               5178 us
+Average RTT:           5175 us
+========================
+
+
+> chaos 100Chaos packets set to 100
+
+=== GLITCH GOBLIN CHAOS TEST ===
+Transactions: 100
+Fault probabilities:
+Normal:    70%
+Bad CRC:   10%
+Drop:      10%
+Duplicate: 5%
+Delay:     5%
+
+TX #128 attempt 1 [DELAY]
+ACK #128 received
+TX #129 attempt 1 [NORMAL]
+ACK #129 received
+TX #130 attempt 1 [BAD CRC]
+ACK timeout
+TX #130 attempt 2 [NORMAL]
+ACK #130 received
+TX #131 attempt 1 [NORMAL]
+ACK #131 received
+TX #132 attempt 1 [NORMAL]
+ACK #132 received
+TX #133 attempt 1 [DROP]
+ACK timeout
+TX #133 attempt 2 [NORMAL]
+ACK #133 received
+TX #134 attempt 1 [DUPLICATE]
+ACK #134 received
+TX #135 attempt 1 [DELAY]
+ACK #135 received
+TX #136 attempt 1 [NORMAL]
+ACK #136 received
+TX #137 attempt 1 [NORMAL]
+ACK #137 received
+TX #138 attempt 1 [DROP]
+ACK timeout
+TX #138 attempt 2 [NORMAL]
+ACK #138 received
+TX #139 attempt 1 [NORMAL]
+ACK #139 received
+TX #140 attempt 1 [NORMAL]
+ACK #140 received
+TX #141 attempt 1 [NORMAL]
+ACK #141 received
+TX #142 attempt 1 [NORMAL]
+ACK #142 received
+TX #143 attempt 1 [NORMAL]
+ACK #143 received
+TX #144 attempt 1 [NORMAL]
+ACK #144 received
+TX #145 attempt 1 [NORMAL]
+ACK #145 received
+TX #146 attempt 1 [DROP]
+ACK timeout
+TX #146 attempt 2 [NORMAL]
+ACK #146 received
+TX #147 attempt 1 [NORMAL]
+
+ACK #147 received
+TX #148 attempt 1 [NORMAL]
+ACK #148 received
+TX #149 attempt 1 [NORMAL]
+ACK #149 received
+TX #150 attempt 1 [DROP]
+ACK timeout
+TX #150 attempt 2 [NORMAL]
+ACK #150 received
+TX #151 attempt 1 [NORMAL]
+ACK #151 received
+TX #152 attempt 1 [DROP]
+ACK timeout
+TX #152 attempt 2 [DROP]
+ACK timeout
+TX #152 attempt 3 [NORMAL]
+ACK #152 received
+TX #153 attempt 1 [NORMAL]
+ACK #153 received
+TX #154 attempt 1 [BAD CRC]
+ACK timeout
+TX #154 attempt 2 [BAD CRC]
+ACK timeout
+TX #154 attempt 3 [BAD CRC]
+ACK timeout
+Packet #154 failed
+TX #155 attempt 1 [NORMAL]
+ACK #155 received
+TX #156 attempt 1 [NORMAL]
+ACK #156 received
+TX #157 attempt 1 [NORMAL]
+ACK #157 received
+TX #158 attempt 1 [NORMAL]
+ACK #158 received
+TX #159 attempt 1 [NORMAL]
+ACK #159 received
+TX #160 attempt 1 [BAD CRC]
+ACK timeout
+TX #160 attempt 2 [NORMAL]
+ACK #160 received
+TX #161 attempt 1 [DROP]
+ACK timeout
+TX #161 attempt 2 [NORMAL]
+ACK #161 received
+TX #162 attempt 1 [NORMAL]
+ACK #162 received
+TX #163 attempt 1 [NORMAL]
+ACK #163 received
+TX #164 attempt 1 [NORMAL]
+ACK #164 received
+TX #165 attempt 1 [DROP]
+ACK timeout
+TX #165 attempt 2 [BAD CRC]
+ACK timeout
+
+TX #165 attempt 3 [NORMAL]
+ACK #165 received
+TX #166 attempt 1 [DROP]
+ACK timeout
+TX #166 attempt 2 [NORMAL]
+ACK #166 received
+TX #167 attempt 1 [NORMAL]
+ACK #167 received
+TX #168 attempt 1 [NORMAL]
+ACK #168 received
+TX #169 attempt 1 [NORMAL]
+ACK #169 received
+TX #170 attempt 1 [NORMAL]
+ACK #170 received
+TX #171 attempt 1 [NORMAL]
+ACK #171 received
+TX #172 attempt 1 [DROP]
+ACK timeout
+TX #172 attempt 2 [DUPLICATE]
+ACK #172 received
+TX #173 attempt 1 [NORMAL]
+ACK #173 received
+TX #174 attempt 1 [NORMAL]
+ACK #174 received
+TX #175 attempt 1 [NORMAL]
+ACK #175 received
+TX #176 attempt 1 [NORMAL]
+ACK #176 received
+TX #177 attempt 1 [DROP]
+ACK timeout
+TX #177 attempt 2 [BAD CRC]
+ACK timeout
+TX #177 attempt 3 [DROP]
+ACK timeout
+Packet #177 failed
+TX #178 attempt 1 [DROP]
+ACK timeout
+TX #178 attempt 2 [BAD CRC]
+ACK timeout
+TX #178 attempt 3 [NORMAL]
+ACK #178 received
+TX #179 attempt 1 [NORMAL]
+ACK #179 received
+TX #180 attempt 1 [NORMAL]
+ACK #180 received
+TX #181 attempt 1 [NORMAL]
+ACK #181 received
+TX #182 attempt 1 [NORMAL]
+ACK #182 received
+TX #183 attempt 1 [NORMAL]
+ACK #183 received
+TX #184 attempt 1 [NORMAL]
+ACK #184 received
+TX #185 attempt 1 [NORMAL]
+ACK #185 received
+TX #186 attempt 1 [NORMAL]
+ACK #186 received
+TX #187 attempt 1 [NORMAL]
+ACK #187 received
+TX #188 attempt 1 [NORMAL]
+ACK #188 received
+TX #189 attempt 1 [DROP]
+ACK timeout
+TX #189 attempt 2 [NORMAL]
+ACK #189 received
+TX #190 attempt 1 [NORMAL]
+ACK #190 received
+TX #191 attempt 1 [NORMAL]
+ACK #191 received
+TX #192 attempt 1 [DROP]
+ACK timeout
+TX #192 attempt 2 [DROP]
+ACK timeout
+TX #192 attempt 3 [BAD CRC]
+ACK timeout
+Packet #192 failed
+TX #193 attempt 1 [NORMAL]
+ACK #193 received
+TX #194 attempt 1 [NORMAL]
+ACK #194 received
+TX #195 attempt 1 [BAD CRC]
+ACK timeout
+TX #195 attempt 2 [NORMAL]
+ACK #195 received
+TX #196 attempt 1 [NORMAL]
+ACK #196 received
+TX #197 attempt 1 [NORMAL]
+ACK #197 received
+TX #198 attempt 1 [NORMAL]
+ACK #198 received
+TX #199 attempt 1 [NORMAL]
+ACK #199 received
+TX #200 attempt 1 [NORMAL]
+ACK #200 received
+TX #201 attempt 1 [DROP]
+ACK timeout
+TX #201 attempt 2 [NORMAL]
+ACK #201 received
+TX #202 attempt 1 [NORMAL]
+ACK #202 received
+TX #203 attempt 1 [NORMAL]
+ACK #203 received
+TX #204 attempt 1 [NORMAL]
+ACK #204 received
+TX #205 attempt 1 [NORMAL]
+ACK #205 received
+TX #206 attempt 1 [DROP]
+ACK timeout
+TX #206 attempt 2 [NORMAL]
+ACK #206 received
+TX #207 attempt 1 [NORMAL]
+ACK #207 received
+TX #208 attempt 1 [BAD CRC]
+ACK timeout
+TX #208 attempt 2 [NORMAL]
+ACK #208 received
+TX #209 attempt 1 [NORMAL]
+ACK #209 received
+TX #210 attempt 1 [DROP]
+ACK timeout
+TX #210 attempt 2 [NORMAL]
+ACK #210 received
+TX #211 attempt 1 [NORMAL]
+ACK #211 received
+TX #212 attempt 1 [DELAY]
+ACK #212 received
+TX #213 attempt 1 [NORMAL]
+ACK #213 received
+TX #214 attempt 1 [NORMAL]
+ACK #214 received
+TX #215 attempt 1 [NORMAL]
+ACK #215 received
+TX #216 attempt 1 [NORMAL]
+ACK #216 received
+TX #217 attempt 1 [DUPLICATE]
+ACK #217 received
+TX #218 attempt 1 [NORMAL]
+ACK #218 received
+TX #219 attempt 1 [DELAY]
+ACK #219 received
+TX #220 attempt 1 [NORMAL]
+ACK #220 received
+TX #221 attempt 1 [NORMAL]
+ACK #221 received
+TX #222 attempt 1 [NORMAL]
+ACK #222 received
+TX #223 attempt 1 [NORMAL]
+ACK #223 received
+TX #224 attempt 1 [NORMAL]
+ACK #224 received
+TX #225 attempt 1 [NORMAL]
+ACK #225 received
+TX #226 attempt 1 [NORMAL]
+ACK #226 received
+TX #227 attempt 1 [NORMAL]
+ACK #227 received
+
+Chaos test complete.
+
+=== FAULT INJECTION STATS ===
+Normal:      90
+CRC faults:  11
+Drops:       19
+Duplicates:  3
+Delays:      4
+TX attempts: 127
+=============================
+
+Fault probabilities updated
+
+=== GLITCH GOBLIN CONFIG ===
+Retry attempts:    3
+ACK timeout:       500 ms
+Benchmark packets: 100
+Chaos packets:     100
+
+Fault probabilities:
+Normal:            60%
+CRC:               10%
+Drop:              15%
+Duplicate:         10%
+Delay:             5%
+============================
+
+Chaos packets set to 100
+
+=== GLITCH GOBLIN CHAOS TEST ===
+Transactions: 100
+Fault probabilities:
+Normal:    60%
+Bad CRC:   10%
+Drop:      15%
+Duplicate: 10%
+Delay:     5%
+
+TX #228 attempt 1 [DROP]
+ACK timeout
+TX #228 attempt 2 [NORMAL]
+ACK #228 received
+TX #229 attempt 1 [NORMAL]
+ACK #229 received
+TX #230 attempt 1 [NORMAL]
+ACK #230 received
+TX #231 attempt 1 [NORMAL]
+ACK #231 received
+TX #232 attempt 1 [BAD CRC]
+ACK timeout
+TX #232 attempt 2 [DROP]
+ACK timeout
+TX #232 attempt 3 [NORMAL]
+ACK #232 received
+TX #233 attempt 1 [NORMAL]
+ACK #233 received
+TX #234 attempt 1 [DROP]
+ACK timeout
+TX #234 attempt 2 [NORMAL]
+ACK #234 received
+TX #235 attempt 1 [NORMAL]
+ACK #235 received
+TX #236 attempt 1 [DUPLICATE]
+ACK #236 received
+TX #237 attempt 1 [NORMAL]
+ACK #237 received
+TX #238 attempt 1 [NORMAL]
+ACK #238 received
+TX #239 attempt 1 [NORMAL]
+ACK #239 received
+TX #240 attempt 1 [NORMAL]
+ACK #240 received
+TX #241 attempt 1 [NORMAL]
+ACK #241 received
+TX #242 attempt 1 [NORMAL]
+ACK #242 received
+TX #243 attempt 1 [BAD CRC]
+ACK timeout
+TX #243 attempt 2 [BAD CRC]
+ACK timeout
+TX #243 attempt 3 [BAD CRC]
+ACK timeout
+
+Packet #243 failed
+TX #244 attempt 1 [DUPLICATE]
+ACK #244 received
+TX #245 attempt 1 [NORMAL]
+ACK #245 received
+TX #246 attempt 1 [NORMAL]
+ACK #246 received
+TX #247 attempt 1 [NORMAL]
+ACK #247 received
+TX #248 attempt 1 [NORMAL]
+ACK #248 received
+TX #249 attempt 1 [NORMAL]
+ACK #249 received
+TX #250 attempt 1 [DROP]
+ACK timeout
+TX #250 attempt 2 [DROP]
+ACK timeout
+TX #250 attempt 3 [NORMAL]
+ACK #250 received
+TX #251 attempt 1 [NORMAL]
+ACK #251 received
+TX #252 attempt 1 [BAD CRC]
+ACK timeout
+TX #252 attempt 2 [DUPLICATE]
+ACK #252 received
+TX #253 attempt 1 [DROP]
+ACK timeout
+TX #253 attempt 2 [BAD CRC]
+ACK timeout
+TX #253 attempt 3 [NORMAL]
+ACK #253 received
+TX #254 attempt 1 [BAD CRC]
+ACK timeout
+TX #254 attempt 2 [NORMAL]
+ACK #254 received
+TX #255 attempt 1 [NORMAL]
+ACK #255 received
+TX #256 attempt 1 [BAD CRC]
+ACK timeout
+TX #256 attempt 2 [NORMAL]
+ACK #256 received
+TX #257 attempt 1 [DELAY]
+ACK #257 received
+TX #258 attempt 1 [NORMAL]
+ACK #258 received
+TX #259 attempt 1 [NORMAL]
+ACK #259 received
+TX #260 attempt 1 [NORMAL]
+ACK #260 received
+TX #261 attempt 1 [NORMAL]
+ACK #261 received
+TX #262 attempt 1 [NORMAL]
+ACK #262 received
+TX #263 attempt 1 [DROP]
+ACK timeout
+TX #263 attempt 2 [DELAY]
+ACK #263 received
+TX #264 attempt 1 [NORMAL]
+ACK #264 received
+TX #265 attempt 1 [NORMAL]
+ACK #265 received
+TX #266 attempt 1 [NORMAL]
+ACK #266 received
+TX #267 attempt 1 [NORMAL]
+ACK #267 received
+TX #268 attempt 1 [NORMAL]
+ACK #268 received
+TX #269 attempt 1 [NORMAL]
+ACK #269 received
+TX #270 attempt 1 [NORMAL]
+ACK #270 received
+TX #271 attempt 1 [NORMAL]
+ACK #271 received
+TX #272 attempt 1 [NORMAL]
+ACK #272 received
+TX #273 attempt 1 [DROP]
+ACK timeout
+TX #273 attempt 2 [NORMAL]
+ACK #273 received
+TX #274 attempt 1 [NORMAL]
+ACK #274 received
+TX #275 attempt 1 [DUPLICATE]
+ACK #275 received
+TX #276 attempt 1 [DUPLICATE]
+ACK #276 received
+TX #277 attempt 1 [NORMAL]
+ACK #277 received
+TX #278 attempt 1 [NORMAL]
+ACK #278 received
+TX #279 attempt 1 [DROP]
+ACK timeout
+TX #279 attempt 2 [NORMAL]
+ACK #279 received
+TX #280 attempt 1 [NORMAL]
+ACK #280 received
+TX #281 attempt 1 [BAD CRC]
+ACK timeout
+TX #281 attempt 2 [NORMAL]
+ACK #281 received
+TX #282 attempt 1 [NORMAL]
+ACK #282 received
+TX #283 attempt 1 [DUPLICATE]
+ACK #283 received
+TX #284 attempt 1 [DROP]
+ACK timeout
+TX #284 attempt 2 [NORMAL]
+ACK #284 received
+TX #285 attempt 1 [NORMAL]
+ACK #285 received
+TX #286 attempt 1 [NORMAL]
+ACK #286 received
+TX #287 attempt 1 [NORMAL]
+ACK #287 received
+TX #288 attempt 1 [NORMAL]
+ACK #288 received
+TX #289 attempt 1 [DUPLICATE]
+ACK #289 received
+TX #290 attempt 1 [NORMAL]
+ACK #290 received
+TX #291 attempt 1 [NORMAL]
+ACK #291 received
+TX #292 attempt 1 [NORMAL]
+ACK #292 received
+TX #293 attempt 1 [DROP]
+ACK timeout
+TX #293 attempt 2 [NORMAL]
+ACK #293 received
+TX #294 attempt 1 [NORMAL]
+ACK #294 received
+TX #295 attempt 1 [NORMAL]
+ACK #295 received
+TX #296 attempt 1 [NORMAL]
+ACK #296 received
+TX #297 attempt 1 [NORMAL]
+ACK #297 received
+TX #298 attempt 1 [NORMAL]
+ACK #298 received
+TX #299 attempt 1 [DUPLICATE]
+ACK #299 received
+TX #300 attempt 1 [NORMAL]
+ACK #300 received
+TX #301 attempt 1 [NORMAL]
+ACK #301 received
+TX #302 attempt 1 [NORMAL]
+ACK #302 received
+TX #303 attempt 1 [DUPLICATE]
+ACK #303 received
+TX #304 attempt 1 [NORMAL]
+ACK #304 received
+TX #305 attempt 1 [NORMAL]
+ACK #305 received
+TX #306 attempt 1 [NORMAL]
+ACK #306 received
+TX #307 attempt 1 [NORMAL]
+ACK #307 received
+TX #308 attempt 1 [NORMAL]
+ACK #308 received
+TX #309 attempt 1 [NORMAL]
+ACK #309 received
+TX #310 attempt 1 [BAD CRC]
+ACK timeout
+TX #310 attempt 2 [NORMAL]
+ACK #310 received
+TX #311 attempt 1 [NORMAL]
+ACK #311 received
+TX #312 attempt 1 [NORMAL]
+ACK #312 received
+TX #313 attempt 1 [NORMAL]
+ACK #313 received
+TX #314 attempt 1 [NORMAL]
+ACK #314 received
+TX #315 attempt 1 [NORMAL]
+ACK #315 received
+TX #316 attempt 1 [DELAY]
+ACK #316 received
+TX #317 attempt 1 [NORMAL]
+ACK #317 received
+TX #318 attempt 1 [DROP]
+ACK timeout
+TX #318 attempt 2 [NORMAL]
+ACK #318 received
+TX #319 attempt 1 [DROP]
+ACK timeout
+TX #319 attempt 2 [DROP]
+ACK timeout
+TX #319 attempt 3 [NORMAL]
+ACK #319 received
+TX #320 attempt 1 [NORMAL]
+ACK #320 received
+TX #321 attempt 1 [DUPLICATE]
+ACK #321 received
+TX #322 attempt 1 [NORMAL]
+ACK #322 received
+TX #323 attempt 1 [DROP]
+ACK timeout
+TX #323 attempt 2 [NORMAL]
+ACK #323 received
+TX #324 attempt 1 [NORMAL]
+ACK #324 received
+TX #325 attempt 1 [DROP]
+ACK timeout
+TX #325 attempt 2 [DROP]
+ACK timeout
+TX #325 attempt 3 [DROP]
+ACK timeout
+Packet #325 failed
+TX #326 attempt 1 [DUPLICATE]
+ACK #326 received
+TX #327 attempt 1 [DROP]
+ACK timeout
+TX #327 attempt 2 [NORMAL]
+ACK #327 received
+
+Chaos test complete.
+
+=== FAULT INJECTION STATS ===
+Normal:      84
+CRC faults:  10
+Drops:       19
+Duplicates:  11
+Delays:      3
+TX attempts: 127
+=============================
+
+=== SERUM LINK STATS ===
+Successful:             98
+Failed:                 2
+First-attempt success:  79
+Recovered by retry:     19
+Retries:                27
+Timeouts:               29
+Delivery:               98.00%
+Recovery rate:          90.48%
+Min RTT:               5092 us
+Max RTT:               197125 us
+Average RTT:           10531 us
+========================
+
+=== CHAOS TEST VERDICT ===
+Delivery requirement: 95%
+Recovery requirement: 90%
+
+RESULT: PASS
+==========================
+
+
+==========================
+
+
+> faults 60 10 15 10 5
+> chaos 100

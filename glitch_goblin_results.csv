@@ -1,0 +1,2 @@
+timestamp,delivery_pct,recovery_pct,avg_rtt_us,max_rtt_us,min_rtt_us,successful,failed,retries,timeouts,verdict,normal,crc_faults,drops,duplicates,delays
+2026-08-27T20:51:30,100.0,100.0,5178,5181,5178,100,0,0,0,,0,0,0,0,0
